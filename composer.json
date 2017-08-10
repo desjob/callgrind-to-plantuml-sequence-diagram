@@ -3,6 +3,7 @@
     "description": "Generate PlantUML sequence diagrams for PHP using XDebug's callgrind output",
     "license": "MIT",
     "require": {
+        "php": "^7.0",
         "symfony/console": "^3.3"
     },
     "require-dev": {
