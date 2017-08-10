@@ -1,0 +1,26 @@
+{
+    "name": "desjob/callgrind-to-plantuml-sequence-diagram",
+    "description": "Generate PlantUML sequence diagrams for PHP using XDebug's callgrind output",
+    "license": "MIT",
+    "require": {
+        "symfony/console": "^3.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.3"
+    },
+    "authors": [
+	{
+	    "name": "Ana Azevedo",
+	    "email": "ana.azevedo@medicore.nl"
+	},
+        {
+            "name": "Job 'desjob' Schipper",
+            "email": "desjob@hotmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "CallgrindToPlantUML\\": "src/"
+        }
+    }
+}
