@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\CallgrindToPlantUML\Callgrind;
+namespace CallgrindToPlantUML\Tests\Callgrind;
 
 use CallgrindToPlantUML\Callgrind\Call;
 use PHPUnit\Framework\TestCase;
