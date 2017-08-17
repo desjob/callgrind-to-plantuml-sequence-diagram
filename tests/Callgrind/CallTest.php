@@ -20,6 +20,6 @@ class CallTest extends TestCase
         $this->assertEquals(15, $this->call->getId());
         $this->assertEquals('User', $this->call->getToClass());
         $this->assertEquals('getName', $this->call->getMethod());
-        $this->assertEquals(array(1,2,5), $this->call->getCalls());
+        $this->assertEquals(array(1,2,5), $this->call->getSubCallIds());
     }
 }

@@ -1,0 +1,222 @@
+version: 1
+creator: xdebug 2.5.0 (PHP 7.0.17)
+cmd: /var/www/callgrind/test2.php
+part: 1
+positions: line
+
+events: Time
+
+fl=(1) /var/www/callgrind/test2.php
+fn=(1) User->__construct
+9 5
+
+fl=(1)
+fn=(1)
+9 1
+
+fl=(1)
+fn=(1)
+9 1
+
+fl=(1)
+fn=(2) UserService->__construct
+27 77
+cfl=(1)
+cfn=(1)
+calls=1 0 0
+30 5
+cfl=(1)
+cfn=(1)
+calls=1 0 0
+31 1
+cfl=(1)
+cfn=(1)
+calls=1 0 0
+32 1
+
+fl=(1)
+fn=(3) Controller->__construct
+51 3
+
+fl=(1)
+fn=(4) UserService->findUser
+36 5
+
+fl=(1)
+fn=(5) User->__toString
+15 4
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 1
+
+fl=(1)
+fn=(6) Controller->execute
+56 56
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 5
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 4
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 1
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 0
+
+fl=(1)
+fn=(6)
+56 14
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 0
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 0
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 0
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 0
+
+fl=(1)
+fn=(4)
+36 0
+
+fl=(1)
+fn=(5)
+15 0
+
+fl=(1)
+fn=(6)
+56 46
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 0
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 0
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 0
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 0
+cfl=(1)
+cfn=(5)
+calls=1 0 0
+62 0
+
+fl=(2) php:internal
+fn=(7) php::Exception->__construct
+41 20
+
+fl=(1)
+fn=(4)
+36 123
+cfl=(2)
+cfn=(7)
+calls=1 0 0
+41 20
+
+fl=(2)
+fn=(8) php::Exception->getMessage
+64 0
+
+fl=(1)
+fn=(6)
+56 30
+cfl=(1)
+cfn=(4)
+calls=1 0 0
+61 144
+cfl=(2)
+cfn=(8)
+calls=1 0 0
+64 0
+
+fl=(1)
+fn=(9) {main}
+
+summary: 494
+
+1 93
+cfl=(1)
+cfn=(2)
+calls=1 0 0
+78 86
+cfl=(1)
+cfn=(3)
+calls=1 0 0
+79 3
+cfl=(1)
+cfn=(6)
+calls=1 0 0
+80 67
+cfl=(1)
+cfn=(6)
+calls=1 0 0
+81 15
+cfl=(1)
+cfn=(6)
+calls=1 0 0
+82 51
+cfl=(1)
+cfn=(6)
+calls=1 0 0
+83 175

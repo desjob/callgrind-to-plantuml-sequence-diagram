@@ -15,14 +15,14 @@ class Call
     private $method;
 
     /** @var array */
-    private $calls;
+    private $subCallIds;
 
-    public function __construct(int $id, string $toClass, string $method, array $calls)
+    public function __construct(int $id, string $toClass, string $method, array $subCallIds = array())
     {
         $this->id = $id;
         $this->toClass = $toClass;
         $this->method = $method;
-        $this->calls = $calls;
+        $this->subCallIds = $subCallIds;
     }
 
     public function getId(): int
@@ -40,11 +40,13 @@ class Call
         return $this->method;
     }
 
-    /**
-     * @return array
-     */
-    public function getCalls(): array
+    public function getSubCallIds(): array
     {
-        return $this->calls;
+        return $this->subCallIds;
+    }
+
+    public function addSubCallId(int $callId)
+    {
+        $this->subCallIds[] = $callId;
     }
 }
