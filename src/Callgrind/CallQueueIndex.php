@@ -15,6 +15,10 @@ class CallQueueIndex
      */
     public function hasCallId(int $id): bool
     {
+        if (empty($this->queues)) {
+            return false;
+        }
+
         return array_key_exists($id, $this->queues);
     }
 

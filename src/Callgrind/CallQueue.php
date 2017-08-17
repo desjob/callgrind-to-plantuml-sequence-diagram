@@ -25,4 +25,12 @@ class CallQueue
         }
         return array_shift($this->calls);
     }
+
+    /**
+     * @return array
+     */
+    public function get(): array
+    {
+        return $this->calls;
+    }
 }
