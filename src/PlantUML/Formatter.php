@@ -9,6 +9,6 @@ class Formatter
 {
     public function format(Call $call): string
     {
-        return $call->getFromClass().' -> '.$call->getToClass();
+        return $call->getFromClass().' -> '.$call->getToClass().': '.$call->getMethod().'()';
     }
 }
