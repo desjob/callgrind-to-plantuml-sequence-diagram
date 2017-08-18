@@ -62,7 +62,7 @@ class SequenceBuilder
                 $this->getChildren($subCallId, $call->getToClass(), $sequence);
             }
         }
-        $sequenceCall = new SequenceCall($fromClass, $call->getToClass(), static::RETURN);
+        $sequenceCall = new SequenceCall($fromClass, $call->getToClass(), static::RETURN,true);
         $sequence->add($sequenceCall);
     }
 }

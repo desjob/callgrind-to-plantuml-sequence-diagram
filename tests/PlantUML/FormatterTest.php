@@ -2,7 +2,7 @@
 
 namespace CallgrindToPlantUML\Tests\PlantUML;
 
-use CallgrindToPlantUML\PlantUML\Formatter;
+use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\SequenceDiagram\Call;
 use PHPUnit\Framework\TestCase;
 
@@ -12,7 +12,7 @@ class FormatterTest extends TestCase
     {
         $call = new Call('Foo', 'Bar', 'execute');
 
-        $formatter = new Formatter();
+        $formatter = new CallFormatter();
 
         $this->assertEquals('Foo -> Bar: execute()', $formatter->format($call));
     }

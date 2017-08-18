@@ -5,7 +5,7 @@ namespace CallgrindToPlantUML\SequenceDiagram;
 class Sequence
 {
     /** @var \CallgrindToPlantUML\SequenceDiagram\Call[] */
-    private $calls;
+    private $calls = array();
 
     /**
      * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
@@ -25,5 +25,13 @@ class Sequence
         }
 
         return array_shift($this->calls);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasItems(): bool
+    {
+        return count($this->calls) > 0;
     }
 }

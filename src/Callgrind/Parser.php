@@ -116,7 +116,7 @@ class Parser
      *  index 2 = class name
      *  index 4 = method name
      *
-     * A function call (not in a class) in the global namespace call will return matches:
+     * A function call (not in a class) in the global OR custom namespace call will return matches:
      *  index 1 = function id
      *  index 2 = method name
      *  index 4 = [EMPTY STRING]
@@ -125,8 +125,6 @@ class Parser
      *  index 1 = function id
      *  index 2 = [EMPTY STRING]
      *  index 4 = [EMPTY STRING]
-     *
-     * @todo: function in a namespace but not in a class
      *
      * @param $line
      *
@@ -143,8 +141,12 @@ class Parser
             $call = new Call($matches[1], $matches[2], $matches[4]);
             $this->cacheCallData($call);
         } elseif (isset($matches[2]) && strlen($matches[2])) {
-            // global function call
-            $call = new Call($matches[1], self::PHP_MAIN, $matches[2]);
+            // global OR namespaced function call
+            // could be that the "global" function resides in a namespace, in that case we want to remove the namespace
+            $nameSpacedFunctionName = $matches[2];
+            $namespaceParts = explode('\\', $nameSpacedFunctionName);
+            $functionName = end($namespaceParts);
+            $call = new Call($matches[1], self::PHP_MAIN, $functionName);
             $this->cacheCallData($call);
         } else {
             try {

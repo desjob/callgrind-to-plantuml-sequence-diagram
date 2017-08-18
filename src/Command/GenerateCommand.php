@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace CallgrindToPlantUML\Command;
 
+use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
+use CallgrindToPlantUML\Callgrind\Parser;
+use CallgrindToPlantUML\PlantUML\CallFormatter;
+use CallgrindToPlantUML\PlantUML\SequenceFormatter;
+use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,6 +25,22 @@ class GenerateCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->write('not implemented yet'.PHP_EOL);
+        $fileName = $input->getArgument('filename');
+        if(!is_readable($fileName)) {
+            throw new \InvalidArgumentException('given filename '.$fileName.' is not readable');
+        }
+
+        $fileContent = file_get_contents($fileName);
+        $parser = new Parser($fileContent);
+        $eventCalls = $parser->getEventCalls();
+        $callQueueIndexBuilder = new CallQueueIndexBuilder($eventCalls);
+        $callQueueIndex = $callQueueIndexBuilder->build();
+        $summaryCalls = $parser->getSummaryCalls();
+        $sequenceBuilder = new SequenceBuilder($callQueueIndex, $summaryCalls);
+        $sequence = $sequenceBuilder->build();
+
+        $sequenceFormatter = new SequenceFormatter($sequence, new CallFormatter());
+
+        echo $sequenceFormatter->format();
     }
 }

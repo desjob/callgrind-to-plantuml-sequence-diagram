@@ -14,16 +14,20 @@ class Call
     /** @var string */
     private $method;
 
+    /** @var bool */
+    private $returnCall;
+
     /**
      * @param string $fromClass
      * @param string $toClass
      * @param string $method
      */
-    public function __construct(string $fromClass, string $toClass, string $method)
+    public function __construct(string $fromClass, string $toClass, string $method, bool $returnCall = false)
     {
         $this->fromClass = $fromClass;
         $this->toClass = $toClass;
         $this->method = $method;
+        $this->returnCall = $returnCall;
     }
 
     /**
@@ -48,5 +52,13 @@ class Call
     public function getMethod(): string
     {
         return $this->method;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isReturnCall(): bool
+    {
+        return $this->returnCall;
     }
 }
