@@ -75,8 +75,6 @@ class SequenceBuilderTest extends TestCase
 
         $this->events = $callQueueIndex;
 
-        $this->summary = [];
-        $this->summary[] = new Call(2, 'UserService', '__construct', array());
         $this->summary[] = new Call(3, 'Controller', '__construct', array());
         $this->summary[] = new Call(6, 'Controller', 'execute', array());
         $this->summary[] = new Call(6, 'Controller', 'execute', array());
@@ -85,11 +83,11 @@ class SequenceBuilderTest extends TestCase
     }
 
     /**
-     * @testdox Test some of the flow.
+     * @testdox Test flow for nodes with children.
      */
-    public function test()
+    public function testNodesWithChildren()
     {
-        $sequenceBuilder = new SequenceBuilder($this->events, $this->summary);
+        $sequenceBuilder = new SequenceBuilder($this->events, array(new Call(2, 'UserService', '__construct', array())));
         $result = $sequenceBuilder->build();
 
         $call = $result->pop();
@@ -130,6 +128,25 @@ class SequenceBuilderTest extends TestCase
         $call = $result->pop();
         $this->assertSame(SequenceBuilder::ACTOR, $call->getFromClass());
         $this->assertSame('UserService', $call->getToClass());
+        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
+    }
+
+    /**
+     * @testdox Test flow for nodes without children.
+     */
+    public function testNodesWithoutChildren()
+    {
+        $sequenceBuilder = new SequenceBuilder($this->events, array(new Call(3, 'Controller', '__construct', array())));
+        $result = $sequenceBuilder->build();
+
+        $call = $result->pop();
+        $this->assertSame(SequenceBuilder::ACTOR, $call->getFromClass());
+        $this->assertSame('Controller', $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame(SequenceBuilder::ACTOR, $call->getFromClass());
+        $this->assertSame('Controller', $call->getToClass());
         $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
     }
 }
