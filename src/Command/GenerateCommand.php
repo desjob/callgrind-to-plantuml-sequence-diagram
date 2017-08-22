@@ -7,9 +7,12 @@ use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
 use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\PlantUML\SequenceFormatter;
+use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
+use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -20,7 +23,14 @@ class GenerateCommand extends Command
         $this
             ->setName('generate')
             ->setDescription('A command to bulk import documents.')
-            ->addArgument('filename', InputArgument::REQUIRED, 'File to import');
+            ->addArgument('filename', InputArgument::REQUIRED, 'File to import')
+            ->addOption(
+                'not-deeper-than',
+                'd',
+                12,
+                'Do not include calls that happen within SomeClass::method',
+                array()
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -37,10 +47,26 @@ class GenerateCommand extends Command
         $callQueueIndex = $callQueueIndexBuilder->build();
         $summaryCalls = $parser->getSummaryCalls();
         $sequenceBuilder = new SequenceBuilder($callQueueIndex, $summaryCalls);
-        $sequence = $sequenceBuilder->build();
+        $fullSequence = $sequenceBuilder->build();
+        $filteredSequence = $this->applyFilters($input, $output, $fullSequence);
+        $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
+        $output->write($sequenceFormatter->format());
+    }
 
-        $sequenceFormatter = new SequenceFormatter($sequence, new CallFormatter());
+    private function applyFilters(InputInterface $input, OutputInterface $output, Sequence $sequence)
+    {
+        foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
 
-        echo $sequenceFormatter->format();
+            $parts = explode('::', $notDeeperThanCall);
+
+            if(count($parts) === 2) {
+                $filter = new NotDeeperThanFilter($parts[0], $parts[1]);
+                $sequence = $filter->apply($sequence);
+            } else {
+                throw new \InvalidArgumentException('given value `'.$notDeeperThanCall.'` for not-deeper-than is invalid. use format class::method');
+            }
+        }
+
+        return $sequence;
     }
 }
