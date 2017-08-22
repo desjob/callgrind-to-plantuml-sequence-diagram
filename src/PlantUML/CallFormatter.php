@@ -7,9 +7,6 @@ use CallgrindToPlantUML\SequenceDiagram\Call;
 
 class CallFormatter
 {
-    const CALL_ARROW = '->';
-    const RETURN_CALL_ARROW = '<--';
-
     /**
      * @param \CallgrindToPlantUML\SequenceDiagram\Call $call\
      *
@@ -17,9 +14,16 @@ class CallFormatter
      */
     public function format(Call $call): string
     {
-        $arrow = $call->isReturnCall()? self::RETURN_CALL_ARROW : self::CALL_ARROW;
+        $fromClass = $this->replaceNameSpace($call->getFromClass());
+        $toClass = $this->replaceNameSpace($call->getToClass());
+        $method = $call->getMethod();
+        if($call->isReturnCall()) {
+            $callText = "{$toClass} <-- {$fromClass}".PHP_EOL;
+        } else {
+            $callText = "{$fromClass} -> {$toClass}: {$method}()".PHP_EOL;
+        }
 
-        return $this->replaceNameSpace($call->getFromClass()).' '.$arrow.' '.$this->replaceNameSpace($call->getToClass()).': '.$call->getMethod().'()'.PHP_EOL;
+        return $callText;
     }
 
     private function replaceNameSpace($className)
