@@ -7,6 +7,7 @@ use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
 use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\PlantUML\SequenceFormatter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\NativeFunctionFilter;
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
@@ -27,9 +28,16 @@ class GenerateCommand extends Command
             ->addOption(
                 'not-deeper-than',
                 'd',
-                12,
+                InputOption::VALUE_OPTIONAL + InputOption::VALUE_IS_ARRAY,
                 'Do not include calls that happen within SomeClass::method',
                 array()
+            )
+            ->addOption(
+                'exclude-native-function-calls',
+                'f',
+                InputOption::VALUE_OPTIONAL,
+                'Exclude calls to php native functions in the diagram',
+                true
             );
     }
 
@@ -56,7 +64,6 @@ class GenerateCommand extends Command
     private function applyFilters(InputInterface $input, OutputInterface $output, Sequence $sequence)
     {
         foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
-
             $parts = explode('::', $notDeeperThanCall);
 
             if(count($parts) === 2) {
@@ -65,6 +72,11 @@ class GenerateCommand extends Command
             } else {
                 throw new \InvalidArgumentException('given value `'.$notDeeperThanCall.'` for not-deeper-than is invalid. use format class::method');
             }
+        }
+
+        if($input->getOption('exclude-native-function-calls')) {
+            $filter = new NativeFunctionFilter();
+            $sequence = $filter->apply($sequence);
         }
 
         return $sequence;
