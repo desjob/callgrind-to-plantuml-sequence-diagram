@@ -8,6 +8,7 @@ use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\PlantUML\SequenceFormatter;
 use CallgrindToPlantUML\SequenceDiagram\Filter\NativeFunctionFilter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\StartFromFilter;
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
@@ -29,7 +30,7 @@ class GenerateCommand extends Command
                 'not-deeper-than',
                 'd',
                 InputOption::VALUE_OPTIONAL + InputOption::VALUE_IS_ARRAY,
-                'Do not include calls that happen within SomeClass::method',
+                'Do not include calls that happen within the given Class::method',
                 array()
             )
             ->addOption(
@@ -38,6 +39,13 @@ class GenerateCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 'Exclude calls to php native functions in the diagram',
                 true
+            )
+            ->addOption(
+                'start-from',
+                's',
+                InputOption::VALUE_OPTIONAL,
+                'Only include calls that happen inside the given Class::method',
+                null
             );
     }
 
@@ -61,6 +69,13 @@ class GenerateCommand extends Command
         $output->write($sequenceFormatter->format());
     }
 
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param \CallgrindToPlantUML\SequenceDiagram\Sequence $sequence
+     *
+     * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
+     */
     private function applyFilters(InputInterface $input, OutputInterface $output, Sequence $sequence)
     {
         foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
@@ -77,6 +92,17 @@ class GenerateCommand extends Command
         if($input->getOption('exclude-native-function-calls')) {
             $filter = new NativeFunctionFilter();
             $sequence = $filter->apply($sequence);
+        }
+
+        if($startFrom = $input->getOption('start-from')) {
+            $parts = explode('::', $startFrom);
+
+            if(count($parts) === 2) {
+                $filter = new StartFromFilter($parts[0], $parts[1]);
+                $sequence = $filter->apply($sequence);
+            } else {
+                throw new \InvalidArgumentException('given value `'.$startFrom.'` for start-from is invalid. use format class::method');
+            }
         }
 
         return $sequence;
