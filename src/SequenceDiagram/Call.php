@@ -21,6 +21,7 @@ class Call
      * @param string $fromClass
      * @param string $toClass
      * @param string $method
+     * @param bool $returnCall
      */
     public function __construct(string $fromClass, string $toClass, string $method, bool $returnCall = false)
     {
