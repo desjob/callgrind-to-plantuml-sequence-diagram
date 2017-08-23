@@ -25,6 +25,9 @@ class GenerateCommand extends Command
     const EXPORT_FORMAT_FILE = 'file';
     const EXPORT_FORMAT_IMAGE = 'image';
 
+    /**
+     * Configure command.
+     */
     protected function configure()
     {
         $this
@@ -54,10 +57,16 @@ class GenerateCommand extends Command
             );
     }
 
+    /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @throws \InvalidArgumentException
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $fileName = $input->getArgument('filename');
-        if(!is_readable($fileName)) {
+        if (!is_readable($fileName)) {
             throw new \InvalidArgumentException('given filename '.$fileName.' is not readable');
         }
 
@@ -84,7 +93,7 @@ class GenerateCommand extends Command
                 break;
         }
 
-        $formattedSequence = $this->getFormattedSequence($input, $output, $fileName);
+        $formattedSequence = $this->getFormattedSequence($input, $fileName);
 
         if (!empty($outputTo)) {
             $this->checkOutputDir($outputTo);
@@ -126,11 +135,12 @@ class GenerateCommand extends Command
     }
 
     /**
+     * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param string $fileName
      *
      * @return string
      */
-    private function getFormattedSequence(InputInterface $input, OutputInterface $output, string $fileName): string
+    private function getFormattedSequence(InputInterface $input, string $fileName): string
     {
         $fileContent = file_get_contents($fileName);
         $parser = new Parser($fileContent);
@@ -140,7 +150,7 @@ class GenerateCommand extends Command
         $summaryCalls = $parser->getSummaryCalls();
         $sequenceBuilder = new SequenceBuilder($callQueueIndex, $summaryCalls);
         $fullSequence = $sequenceBuilder->build();
-        $filteredSequence = $this->applyFilters($input, $output, $fullSequence);
+        $filteredSequence = $this->applyFilters($input, $fullSequence);
         $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
 
         return $sequenceFormatter->format();
@@ -153,7 +163,7 @@ class GenerateCommand extends Command
      *
      * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
      */
-    private function applyFilters(InputInterface $input, OutputInterface $output, Sequence $sequence)
+    private function applyFilters(InputInterface $input, Sequence $sequence)
     {
         foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
             $parts = explode('::', $notDeeperThanCall);
