@@ -110,16 +110,8 @@ class GenerateCommand extends Command
                 break;
             case static::EXPORT_FORMAT_IMAGE:
                 file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
-                $io->text('[' . date('H:i:s') . '] Converting');
-                shell_exec(
-                    'java' .
-                    ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize .
-                    ' -Xmx' . $memory .
-                    ' -jar ' . $jarFileName .
-                    ' -graphvizdot "' . $dotFileName . '"' .
-                    ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"'
-                );
-//                shell_exec('java -jar ' . $jarFileName . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
+                $io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
+                shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize . ' -Xmx' . $memory . ' -jar ' . $jarFileName . ' -graphvizdot "' . $dotFileName . '"' . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
                 break;
         }
         $io->success('[' . date('H:i:s') . '] Process complete!');
