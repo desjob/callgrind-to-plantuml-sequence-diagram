@@ -72,6 +72,7 @@ class GenerateCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
         $io->title('CallgrindToPlantUML');
+        $io->note('Pro tip: if your diagram gets cut off, use more memory, apply a filter or upgrade to the Pro version');
         $exportFormat = $io->choice(
             'Export format:',
             array(static::EXPORT_FORMAT_SCREEN, static::EXPORT_FORMAT_FILE, static::EXPORT_FORMAT_IMAGE),
@@ -99,6 +100,7 @@ class GenerateCommand extends Command
             $this->checkOutputDir($outputTo);
         }
 
+        $io->text('[' . date('H:i:s') . '] Exporting to ' . $exportFormat);
         switch ($exportFormat) {
             case static::EXPORT_FORMAT_SCREEN:
                 echo $formattedSequence;
@@ -108,18 +110,19 @@ class GenerateCommand extends Command
                 break;
             case static::EXPORT_FORMAT_IMAGE:
                 file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
-//                shell_exec(
-//                    'java' .
-//                    ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize .
-//                    ' -Xmx' . $memory .
-//                    ' -jar ' . $jarFileName .
-//                    ' -graphvizdot "' . $dotFileName . '"' .
-//                    ' "' . $outputFileName . '"' .
-//                    ' "' . $outputTo . '"'
-//                );
-                shell_exec('java -jar ' . $jarFileName . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
+                $io->text('[' . date('H:i:s') . '] Converting');
+                shell_exec(
+                    'java' .
+                    ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize .
+                    ' -Xmx' . $memory .
+                    ' -jar ' . $jarFileName .
+                    ' -graphvizdot "' . $dotFileName . '"' .
+                    ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"'
+                );
+//                shell_exec('java -jar ' . $jarFileName . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
                 break;
         }
+        $io->success('[' . date('H:i:s') . '] Process complete!');
     }
 
     /**
