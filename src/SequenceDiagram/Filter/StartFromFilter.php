@@ -37,6 +37,9 @@ class StartFromFilter implements FilterInterface
         while ($sequence->hasItems()) {
             $call = $sequence->pop();
 
+//            if (strpos($call->getToClass(), 'ClinicController') !== false) {
+                error_log($call->getToClass() . ' --> ' . $call->getMethod() . ' *** ' . $this->toClass . ' --> ' . $this->method);
+//            }
             // check if we need to start adding yet
             if(!$startAdding && $call->getToClass() === $this->toClass && $call->getMethod() === $this->method) {
                 $startAdding = true;

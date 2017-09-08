@@ -52,6 +52,7 @@ class SequenceBuilder
     private function getChildren(int $fromId, string $fromClass, Sequence &$sequence)
     {
         $callQueue = $this->events->get($fromId);
+        var_dump($fromId);
         $call = $callQueue->pop();
 
         $sequenceCall = new SequenceCall($fromClass, $call->getToClass(), $call->getMethod());

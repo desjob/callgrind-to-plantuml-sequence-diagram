@@ -25,6 +25,9 @@ class GenerateCommand extends Command
     const EXPORT_FORMAT_FILE = 'file';
     const EXPORT_FORMAT_IMAGE = 'image';
 
+    /** @var \Symfony\Component\Console\Style\SymfonyStyle */
+    private $io;
+
     /**
      * Configure command.
      */
@@ -70,10 +73,10 @@ class GenerateCommand extends Command
             throw new \InvalidArgumentException('given filename '.$fileName.' is not readable');
         }
 
-        $io = new SymfonyStyle($input, $output);
-        $io->title('CallgrindToPlantUML');
-        $io->note('Pro tip: if your diagram gets cut off, use more memory, apply a filter or upgrade to the Pro version');
-        $exportFormat = $io->choice(
+        $this->io = new SymfonyStyle($input, $output);
+        $this->io->title('CallgrindToPlantUML');
+        $this->io->note('Pro tip: if your diagram gets cut off, use more memory, apply a filter or upgrade to the Pro version');
+        $exportFormat = $this->io->choice(
             'Export format:',
             array(static::EXPORT_FORMAT_SCREEN, static::EXPORT_FORMAT_FILE, static::EXPORT_FORMAT_IMAGE),
             'image'
@@ -84,13 +87,13 @@ class GenerateCommand extends Command
             case static::EXPORT_FORMAT_SCREEN:
                 break;
             case static::EXPORT_FORMAT_IMAGE:
-                $dotFileName = $io->ask('DOT file location:', '/usr/bin/dot');
-                $jarFileName = $io->ask('JAR file location:', 'plantuml.jar');
-                $memory = $io->ask('Max. memory:', '2048m');
-                $diagramSize = $io->ask('Max. diagram size:', '30000');
+                $dotFileName = $this->io->ask('DOT file location:', '/usr/bin/dot');
+                $jarFileName = $this->io->ask('JAR file location:', 'plantuml.jar');
+                $memory = $this->io->ask('Max. memory:', '2048m');
+                $diagramSize = $this->io->ask('Max. diagram size:', '30000');
             case static::EXPORT_FORMAT_FILE:
-                $outputFileName = $io->ask('Output file name:', $outputFileName);
-                $outputTo = $io->ask('Output file location:', 'output');
+                $outputFileName = $this->io->ask('Output file name:', $outputFileName);
+                $outputTo = $this->io->ask('Output file location:', 'output');
                 break;
         }
 
@@ -100,7 +103,7 @@ class GenerateCommand extends Command
             $this->checkOutputDir($outputTo);
         }
 
-        $io->text('[' . date('H:i:s') . '] Exporting to ' . $exportFormat);
+        $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $exportFormat);
         switch ($exportFormat) {
             case static::EXPORT_FORMAT_SCREEN:
                 echo $formattedSequence;
@@ -110,11 +113,11 @@ class GenerateCommand extends Command
                 break;
             case static::EXPORT_FORMAT_IMAGE:
                 file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
-                $io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
+                $this->io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
                 shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize . ' -Xmx' . $memory . ' -jar ' . $jarFileName . ' -graphvizdot "' . $dotFileName . '"' . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
                 break;
         }
-        $io->success('[' . date('H:i:s') . '] Process complete!');
+        $this->io->success('[' . date('H:i:s') . '] Process complete!');
     }
 
     /**
@@ -137,15 +140,35 @@ class GenerateCommand extends Command
      */
     private function getFormattedSequence(InputInterface $input, string $fileName): string
     {
-        $fileContent = file_get_contents($fileName);
-        $parser = new Parser($fileContent);
+        $this->io->text('[' . date('H:i:s') . '] Parsing file');
+        $parser = new Parser();
+        $parser->parseFile($fileName);
         $eventCalls = $parser->getEventCalls();
+        $summaryCalls = $parser->getSummaryCalls();
+
+//        foreach ($summaryCalls as $call) {
+//            error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
+//        }
+//        error_log('*************************');
+        foreach ($eventCalls as $call) {
+            if ($call->getId() == 4051) {
+                error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
+            }
+        }
+die();
+
+        $this->io->text('[' . date('H:i:s') . '] Indexing calls');
         $callQueueIndexBuilder = new CallQueueIndexBuilder($eventCalls);
         $callQueueIndex = $callQueueIndexBuilder->build();
-        $summaryCalls = $parser->getSummaryCalls();
+
+        $this->io->text('[' . date('H:i:s') . '] Building sequence');
         $sequenceBuilder = new SequenceBuilder($callQueueIndex, $summaryCalls);
         $fullSequence = $sequenceBuilder->build();
+
+        $this->io->text('[' . date('H:i:s') . '] Applying filters');
         $filteredSequence = $this->applyFilters($input, $fullSequence);
+
+        $this->io->text('[' . date('H:i:s') . '] Formatting sequence');
         $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
 
         return $sequenceFormatter->format();
@@ -163,7 +186,7 @@ class GenerateCommand extends Command
         foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
             $parts = explode('::', $notDeeperThanCall);
 
-            if(count($parts) === 2) {
+            if (count($parts) === 2) {
                 $filter = new NotDeeperThanFilter($parts[0], $parts[1]);
                 $sequence = $filter->apply($sequence);
             } else {
@@ -171,15 +194,15 @@ class GenerateCommand extends Command
             }
         }
 
-        if($input->getOption('exclude-native-function-calls')) {
+        if ($input->getOption('exclude-native-function-calls')) {
             $filter = new NativeFunctionFilter();
             $sequence = $filter->apply($sequence);
         }
 
-        if($startFrom = $input->getOption('start-from')) {
+        if ($startFrom = $input->getOption('start-from')) {
             $parts = explode('::', $startFrom);
 
-            if(count($parts) === 2) {
+            if (count($parts) === 2) {
                 $filter = new StartFromFilter($parts[0], $parts[1]);
                 $sequence = $filter->apply($sequence);
             } else {

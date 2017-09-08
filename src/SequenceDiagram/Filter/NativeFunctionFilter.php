@@ -18,7 +18,7 @@ class NativeFunctionFilter implements FilterInterface
         $filteredSequence = new Sequence();
         while ($sequence->hasItems()) {
             $call = $sequence->pop();
-            if($call->getFromClass() !== Parser::PHP_MAIN && $call->getToClass() !== Parser::PHP_MAIN) {
+            if ($call->getFromClass() !== Parser::PHP_MAIN && $call->getToClass() !== Parser::PHP_MAIN) {
                 $filteredSequence->add($call);
             }
         }

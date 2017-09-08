@@ -23,6 +23,7 @@ class CallQueue
         if (empty($this->calls)) {
            throw new CallQueueEmptyException('cannot pop of an empty call queue');
         }
+
         return array_shift($this->calls);
     }
 

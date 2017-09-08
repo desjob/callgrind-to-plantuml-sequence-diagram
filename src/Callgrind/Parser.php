@@ -4,8 +4,14 @@ namespace CallgrindToPlantUML\Callgrind;
 
 class Parser
 {
-    /** @var string */
-    private $callGrind;
+    /** @var \CallgrindToPlantUML\Callgrind\Call[] */
+    private $eventCalls;
+
+    /** @var \CallgrindToPlantUML\Callgrind\Call[] */
+    private $summaryCalls;
+
+    /** @var \CallgrindToPlantUML\Callgrind\Call */
+    private $mainCall;
 
     private $functionNames = array();
     private $classNames = array();
@@ -18,9 +24,13 @@ class Parser
     const NEW_LINE_SPLIT_REGEX = "/((\r?\n)|(\r\n?))/";
     const PHP_MAIN = 'php';
 
-    public function __construct(string $callGrind)
+    /**
+     * @param string $callGrind
+     */
+    public function __construct()
     {
-        $this->callGrind = $callGrind;
+        $this->eventCalls = [];
+        $this->summaryCalls = [];
     }
 
     /**
@@ -28,34 +38,7 @@ class Parser
      */
     public function getEventCalls(): array
     {
-        $split = preg_split(self::EVENTS_AND_SUMMARY_SPLIT_REGEX, $this->callGrind);
-        $eventSegment = $split[1];
-
-        $lookForSubCalls = false;
-        $eventCalls = array();
-
-        foreach (preg_split(self::NEW_LINE_SPLIT_REGEX, $eventSegment) as $line) {
-
-            if (!$lookForSubCalls) {
-                if ($call = $this->matchCall($line)) {
-                    $eventCalls[] = $call;
-                    $lookForSubCalls = true;
-                }
-
-            } else {
-                if ($this->matchedEmptyLine($line)) {
-                    $lookForSubCalls = false;
-                    continue;
-                }
-                if ($subCallId = $this->matchSubCallId($line)) {
-                    $call->addSubCallId($subCallId);
-                }
-            }
-        }
-
-        $this->eventCallsParsed = true;
-
-        return $eventCalls;
+        return $this->eventCalls;
     }
 
     /**
@@ -63,23 +46,122 @@ class Parser
      */
     public function getSummaryCalls(): array
     {
-        if(!$this->eventCallsParsed) {
+        return $this->summaryCalls;
+    }
 
-            throw new \RuntimeException('cannot parse summary calls before parsing event calls.');
+    /**
+     * @param string $fileName
+     */
+    public function parseFile(string $fileName)
+    {
+        $isEvent = false;
+        $isSummary = false;
+        $lookForSubCalls = false;
+        $i = 0;
+        $previousLine = '';
+        $atLeastOneSummaryCallAdded = false;
+        if ($handle = fopen($fileName, "r")) {
+            while (($line = fgets($handle)) !== FALSE) {
+                ++$i;
+                $line = trim($line);
+
+                if ($isEvent) {
+                    $lookForSubCalls = $this->addEventCall($line, $previousLine, $lookForSubCalls);
+                }
+                if ($isSummary) {
+                    if ($this->addSummaryCall($line)) {
+                        $atLeastOneSummaryCallAdded = true;
+                    }
+                }
+
+                if ($this->isEvent($line) || ($isSummary && empty($line) && $atLeastOneSummaryCallAdded)) {
+                    $atLeastOneSummaryCallAdded = false;
+                    $isEvent = true;
+                    $isSummary = false;
+                }
+                if ($this->isSummary($line, $i)) {
+                    $isEvent = false;
+                    $isSummary = true;
+                }
+                $previousLine = $line;
+            }
+        }
+    }
+
+    /**
+     * @param string $line
+     *
+     * @return bool
+     */
+    private function isEvent(string $line): bool
+    {
+        return $line === 'events: Time';
+    }
+
+    /**
+     * Main summary starting point is {main} but there can be more calls with same id.
+     *
+     * @param string $line
+     *
+     * @return bool
+     */
+    private function isSummary(string $line, int $i): bool
+    {
+        if (strpos($line, '{main}') !== false) {
+            $this->mainCall = $this->getCall($line);
+
+            return true;
+        }
+        if (null !== $this->mainCall && $line === 'fn=(' . $this->mainCall->getId() . ')') {
+            return true;
         }
 
-        $split = preg_split(self::EVENTS_AND_SUMMARY_SPLIT_REGEX, $this->callGrind);
-        $summarySegment = $split[2];
+        return false;
+    }
 
-        $summaryCalls = array();
-        foreach (preg_split(self::NEW_LINE_SPLIT_REGEX, $summarySegment) as $line) {
-
-            if($call = $this->matchSubCall($line)) {
-                $summaryCalls[] = $call;
+    /**
+     * @param string $line
+     * @param string $previousLine
+     * @param bool $lookForSubCalls
+     *
+     * @return bool
+     */
+    public function addEventCall(string $line, string $previousLine, bool $lookForSubCalls): bool
+    {
+        // New group of calls.
+        if (!$lookForSubCalls) {
+            if ($call = $this->getCall($line)) {
+                $this->eventCalls[] = $call;
+                $lookForSubCalls = true;
+            }
+        } else {
+            // Group only ends if current line is empty and previous line is the cost.
+            if (empty($line)) {
+                return !preg_match('/^[0-9]+\s[0-9]+/', $previousLine, $matches);
+            }
+            // If not, add as subcall of group call.
+            if ($subCallId = $this->getSubCallId($line)) {
+                end($this->eventCalls)->addSubCallId($subCallId);
             }
         }
 
-        return $summaryCalls;
+        return $lookForSubCalls;
+    }
+
+    /**
+     * @param string $line
+     *
+     * @eturn bool
+     */
+    public function addSummaryCall(string $line): bool
+    {
+        if (!empty($line) && $call = $this->getSubCall($line)) {
+            $this->summaryCalls[] = $call;
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -87,7 +169,7 @@ class Parser
      *
      * @return \CallgrindToPlantUML\Callgrind\Call|null
      */
-    private function matchSubCall($line)
+    private function getSubCall($line)
     {
         if (!preg_match(self::FUNCTION_SUB_CALL_REGEX, $line, $matches)) {
             return;
@@ -101,7 +183,7 @@ class Parser
      *
      * @return int|null
      */
-    private function matchSubCallId($line)
+    private function getSubCallId($line)
     {
         if (!preg_match(self::FUNCTION_SUB_CALL_REGEX, $line, $matches)) {
             return;
@@ -130,7 +212,7 @@ class Parser
      *
      * @return null|\CallgrindToPlantUML\Callgrind\Call
      */
-    private function matchCall($line)
+    private function getCall($line)
     {
         if (!preg_match(self::FUNCTION_CALL_REGEX, $line, $matches)) {
             return;
@@ -161,19 +243,9 @@ class Parser
                 var_dump($line, $matches);
                 die;
             }
-
         }
 
         return $call;
-    }
-
-    private function matchedEmptyLine($line)
-    {
-        if (preg_match(self::EMPTY_LINE_REGEX, $line)) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -187,19 +259,29 @@ class Parser
         $this->functionNames[$call->getId()] = $call->getMethod();
     }
 
+    /**
+     * @param int $functionId
+     *
+     * @return string
+     */
     private function getCachedClassName(int $functionId): string
     {
         if (!isset($this->classNames[$functionId])) {
-            throw new \RuntimeException('function id ' . $functionId[1] . ' was referenced, but never defined in class name cache');
+            throw new \RuntimeException('function id ' . $functionId . ' was referenced, but never defined in class name cache');
         }
 
         return $this->classNames[$functionId];
     }
 
+    /**
+     * @param int $functionId
+     *
+     * @return string
+     */
     private function getCachedFunctionName(int $functionId): string
     {
         if (!isset($this->functionNames[$functionId])) {
-            throw new \RuntimeException('function id ' . $functionId[1] . ' was referenced, but never defined in function name cache');
+            throw new \RuntimeException('function id ' . $functionId . ' was referenced, but never defined in function name cache');
         }
 
         return $this->functionNames[$functionId];
