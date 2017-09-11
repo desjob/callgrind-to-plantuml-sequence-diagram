@@ -23,19 +23,24 @@ class SequenceFormatter
     }
 
     /**
-     * @return string
+     * Always output to file.
      */
-    public function format(): string
+    public function format(string $filename)
     {
-        $formattedOutput = '@startuml'.PHP_EOL;
-        $formattedOutput .= 'actor '.SequenceBuilder::ACTOR.PHP_EOL;
+        $fp = fopen($filename, 'w');
+//        $formattedOutput = '@startuml'.PHP_EOL;
+//        $formattedOutput .= 'actor '.SequenceBuilder::ACTOR.PHP_EOL;
+        fwrite($fp, '@startuml'.PHP_EOL . 'actor '.SequenceBuilder::ACTOR.PHP_EOL);
 
         while($this->sequence->hasItems()) {
-            $formattedOutput .= $this->callFormatter->format($this->sequence->pop());
+//            $formattedOutput .= $this->callFormatter->format($this->sequence->pop());
+            fwrite($fp, $this->callFormatter->format($this->sequence->pop()));
         }
 
-        $formattedOutput .= '@enduml'.PHP_EOL;
+//        $formattedOutput .= '@enduml'.PHP_EOL;
+        fwrite($fp, '@enduml'.PHP_EOL);
+        fclose($fp);
 
-        return $formattedOutput;
+//        return $formattedOutput;
     }
 }

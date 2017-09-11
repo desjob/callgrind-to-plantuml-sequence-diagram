@@ -25,6 +25,8 @@ class GenerateCommand extends Command
     const EXPORT_FORMAT_FILE = 'file';
     const EXPORT_FORMAT_IMAGE = 'image';
 
+    const TEMP_OUTPUT_FILE = 'output/output.plantuml';
+
     /** @var \Symfony\Component\Console\Style\SymfonyStyle */
     private $io;
 
@@ -63,8 +65,6 @@ class GenerateCommand extends Command
     /**
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @throws \InvalidArgumentException
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -106,13 +106,16 @@ class GenerateCommand extends Command
         $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $exportFormat);
         switch ($exportFormat) {
             case static::EXPORT_FORMAT_SCREEN:
-                echo $formattedSequence;
+//                echo $formattedSequence;
+                echo file_get_contents(static::TEMP_OUTPUT_FILE);
                 break;
             case static::EXPORT_FORMAT_FILE:
-                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
+//                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
+                rename(static::TEMP_OUTPUT_FILE, $outputTo . DIRECTORY_SEPARATOR . $outputFileName);
                 break;
             case static::EXPORT_FORMAT_IMAGE:
-                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
+//                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
+                rename(static::TEMP_OUTPUT_FILE, $outputTo . DIRECTORY_SEPARATOR . $outputFileName);
                 $this->io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
                 shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize . ' -Xmx' . $memory . ' -jar ' . $jarFileName . ' -graphvizdot "' . $dotFileName . '"' . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
                 break;
@@ -135,10 +138,8 @@ class GenerateCommand extends Command
     /**
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param string $fileName
-     *
-     * @return string
      */
-    private function getFormattedSequence(InputInterface $input, string $fileName): string
+    private function getFormattedSequence(InputInterface $input, string $fileName)
     {
         $this->io->text('[' . date('H:i:s') . '] Parsing file');
         $parser = new Parser();
@@ -150,12 +151,12 @@ class GenerateCommand extends Command
 //            error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
 //        }
 //        error_log('*************************');
-        foreach ($eventCalls as $call) {
-            if ($call->getId() == 4051) {
-                error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
-            }
-        }
-die();
+//        foreach ($eventCalls as $call) {
+//            if ($call->getId() == 171) {
+//                error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
+//            }
+//        }
+//die();
 
         $this->io->text('[' . date('H:i:s') . '] Indexing calls');
         $callQueueIndexBuilder = new CallQueueIndexBuilder($eventCalls);
@@ -171,12 +172,12 @@ die();
         $this->io->text('[' . date('H:i:s') . '] Formatting sequence');
         $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
 
-        return $sequenceFormatter->format();
+//        return $sequenceFormatter->format(static::TEMP_OUTPUT_FILE);
+        $sequenceFormatter->format(static::TEMP_OUTPUT_FILE);
     }
 
     /**
      * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @param \CallgrindToPlantUML\SequenceDiagram\Sequence $sequence
      *
      * @return \CallgrindToPlantUML\SequenceDiagram\Sequence

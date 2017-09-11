@@ -54,128 +54,40 @@ class Parser
      */
     public function parseFile(string $fileName)
     {
-        $isEvent = false;
-        $isSummary = false;
-        $lookForSubCalls = false;
         $i = 0;
-        $previousLine = '';
-        $atLeastOneSummaryCallAdded = false;
+        $mainId = null;
         if ($handle = fopen($fileName, "r")) {
+            // Parse file and build calls.
             while (($line = fgets($handle)) !== FALSE) {
                 ++$i;
                 $line = trim($line);
 
-                if ($isEvent) {
-                    $lookForSubCalls = $this->addEventCall($line, $previousLine, $lookForSubCalls);
+                if (substr($line, 0, 4) === "fn=(") {
+                    if ($call = $this->getCall($line)) {
+                        $this->eventCalls[] = $call;
+                        if ($call->getMethod() === "{main}") {
+                            $mainId = $call->getId();
+                        }
+                    }
+
+                    continue;
                 }
-                if ($isSummary) {
-                    if ($this->addSummaryCall($line)) {
-                        $atLeastOneSummaryCallAdded = true;
+
+                if (substr($line, 0, 5) === "cfn=(") {
+                    if ($subCallId = $this->getSubCallId($line)) {
+                        end($this->eventCalls)->addSubCallId($subCallId);
                     }
                 }
+            }
 
-                if ($this->isEvent($line) || ($isSummary && empty($line) && $atLeastOneSummaryCallAdded)) {
-                    $atLeastOneSummaryCallAdded = false;
-                    $isEvent = true;
-                    $isSummary = false;
+            // Move main call to summary list.
+            foreach ($this->eventCalls as $idx => $eventCall) {
+                if ($eventCall->getId() === $mainId) {
+                    $this->summaryCalls[] = $eventCall;
+//                    unset($this->eventCalls[$idx]);
                 }
-                if ($this->isSummary($line, $i)) {
-                    $isEvent = false;
-                    $isSummary = true;
-                }
-                $previousLine = $line;
             }
         }
-    }
-
-    /**
-     * @param string $line
-     *
-     * @return bool
-     */
-    private function isEvent(string $line): bool
-    {
-        return $line === 'events: Time';
-    }
-
-    /**
-     * Main summary starting point is {main} but there can be more calls with same id.
-     *
-     * @param string $line
-     *
-     * @return bool
-     */
-    private function isSummary(string $line, int $i): bool
-    {
-        if (strpos($line, '{main}') !== false) {
-            $this->mainCall = $this->getCall($line);
-
-            return true;
-        }
-        if (null !== $this->mainCall && $line === 'fn=(' . $this->mainCall->getId() . ')') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $line
-     * @param string $previousLine
-     * @param bool $lookForSubCalls
-     *
-     * @return bool
-     */
-    public function addEventCall(string $line, string $previousLine, bool $lookForSubCalls): bool
-    {
-        // New group of calls.
-        if (!$lookForSubCalls) {
-            if ($call = $this->getCall($line)) {
-                $this->eventCalls[] = $call;
-                $lookForSubCalls = true;
-            }
-        } else {
-            // Group only ends if current line is empty and previous line is the cost.
-            if (empty($line)) {
-                return !preg_match('/^[0-9]+\s[0-9]+/', $previousLine, $matches);
-            }
-            // If not, add as subcall of group call.
-            if ($subCallId = $this->getSubCallId($line)) {
-                end($this->eventCalls)->addSubCallId($subCallId);
-            }
-        }
-
-        return $lookForSubCalls;
-    }
-
-    /**
-     * @param string $line
-     *
-     * @eturn bool
-     */
-    public function addSummaryCall(string $line): bool
-    {
-        if (!empty($line) && $call = $this->getSubCall($line)) {
-            $this->summaryCalls[] = $call;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $line
-     *
-     * @return \CallgrindToPlantUML\Callgrind\Call|null
-     */
-    private function getSubCall($line)
-    {
-        if (!preg_match(self::FUNCTION_SUB_CALL_REGEX, $line, $matches)) {
-            return;
-        }
-
-        return new Call($matches[1], $this->getCachedClassName($matches[1]), $this->getCachedFunctionName($matches[1]));
     }
 
     /**
