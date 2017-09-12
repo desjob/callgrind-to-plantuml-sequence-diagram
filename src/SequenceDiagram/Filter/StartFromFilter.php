@@ -20,8 +20,8 @@ class StartFromFilter implements FilterInterface
      */
     public function __construct(string $toClass, string $method)
     {
-        $this->toClass = $toClass;
-        $this->method = $method;
+        $this->toClass = str_replace('.', '\\', $toClass);
+        $this->method = str_replace('()', '', $method);
     }
 
     /**
@@ -37,9 +37,6 @@ class StartFromFilter implements FilterInterface
         while ($sequence->hasItems()) {
             $call = $sequence->pop();
 
-//            if (strpos($call->getToClass(), 'ClinicController') !== false) {
-                error_log($call->getToClass() . ' --> ' . $call->getMethod() . ' *** ' . $this->toClass . ' --> ' . $this->method);
-//            }
             // check if we need to start adding yet
             if(!$startAdding && $call->getToClass() === $this->toClass && $call->getMethod() === $this->method) {
                 $startAdding = true;

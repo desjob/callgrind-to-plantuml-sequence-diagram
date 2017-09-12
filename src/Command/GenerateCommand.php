@@ -30,6 +30,27 @@ class GenerateCommand extends Command
     /** @var \Symfony\Component\Console\Style\SymfonyStyle */
     private $io;
 
+    /** @var string */
+    private $dotFileName;
+
+    /** @var string */
+    private $jarFileName;
+
+    /** @var string */
+    private $memory;
+
+    /** @var string */
+    private $diagramSize;
+
+    /** @var string */
+    private $outputFileName;
+
+    /** @var string */
+    private $outputTo;
+
+    /** @var string */
+    private $exportFormat;
+
     /**
      * Configure command.
      */
@@ -70,57 +91,42 @@ class GenerateCommand extends Command
     {
         $fileName = $input->getArgument('filename');
         if (!is_readable($fileName)) {
-            throw new \InvalidArgumentException('given filename '.$fileName.' is not readable');
+            throw new \InvalidArgumentException('given filename ' . $fileName . ' is not readable');
         }
+
+        $this->filterNotDeeperThan = $input->getOption('not-deeper-than');
+        $this->filterExcludeNativeFunctionCalls = $input->getOption('exclude-native-function-calls');
+        $this->filterStartFrom = $input->getOption('start-from');
 
         $this->io = new SymfonyStyle($input, $output);
         $this->io->title('CallgrindToPlantUML');
         $this->io->note('Pro tip: if your diagram gets cut off, use more memory, apply a filter or upgrade to the Pro version');
-        $exportFormat = $this->io->choice(
+        $this->exportFormat = $this->io->choice(
             'Export format:',
             array(static::EXPORT_FORMAT_SCREEN, static::EXPORT_FORMAT_FILE, static::EXPORT_FORMAT_IMAGE),
             'image'
         );
 
-        $outputFileName = 'output.plantuml';
-        switch ($exportFormat) {
+        $this->outputFileName = 'output.plantuml';
+        switch ($this->exportFormat) {
             case static::EXPORT_FORMAT_SCREEN:
                 break;
             case static::EXPORT_FORMAT_IMAGE:
-                $dotFileName = $this->io->ask('DOT file location:', '/usr/bin/dot');
-                $jarFileName = $this->io->ask('JAR file location:', 'plantuml.jar');
-                $memory = $this->io->ask('Max. memory:', '2048m');
-                $diagramSize = $this->io->ask('Max. diagram size:', '30000');
+                $this->dotFileName = $this->io->ask('DOT file location:', '/usr/bin/dot');
+                $this->jarFileName = $this->io->ask('JAR file location:', 'plantuml.jar');
+                $this->memory = $this->io->ask('Max. memory:', '2048m');
+                $this->diagramSize = $this->io->ask('Max. diagram size:', '30000');
             case static::EXPORT_FORMAT_FILE:
-                $outputFileName = $this->io->ask('Output file name:', $outputFileName);
-                $outputTo = $this->io->ask('Output file location:', 'output');
+                $this->outputFileName = $this->io->ask('Output file name:', $this->outputFileName);
+                $this->outputTo = $this->io->ask('Output file location:', 'output');
                 break;
         }
 
-        $formattedSequence = $this->getFormattedSequence($input, $fileName);
-
-        if (!empty($outputTo)) {
-            $this->checkOutputDir($outputTo);
+        if (!empty($this->outputTo)) {
+            $this->checkOutputDir($this->outputTo);
         }
 
-        $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $exportFormat);
-        switch ($exportFormat) {
-            case static::EXPORT_FORMAT_SCREEN:
-//                echo $formattedSequence;
-                echo file_get_contents(static::TEMP_OUTPUT_FILE);
-                break;
-            case static::EXPORT_FORMAT_FILE:
-//                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
-                rename(static::TEMP_OUTPUT_FILE, $outputTo . DIRECTORY_SEPARATOR . $outputFileName);
-                break;
-            case static::EXPORT_FORMAT_IMAGE:
-//                file_put_contents($outputTo . DIRECTORY_SEPARATOR . $outputFileName, $formattedSequence);
-                rename(static::TEMP_OUTPUT_FILE, $outputTo . DIRECTORY_SEPARATOR . $outputFileName);
-                $this->io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
-                shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $diagramSize . ' -Xmx' . $memory . ' -jar ' . $jarFileName . ' -graphvizdot "' . $dotFileName . '"' . ' "' . $outputTo . DIRECTORY_SEPARATOR . $outputFileName . '"');
-                break;
-        }
-        $this->io->success('[' . date('H:i:s') . '] Process complete!');
+        $this->createSequence($input, $fileName);
     }
 
     /**
@@ -139,24 +145,13 @@ class GenerateCommand extends Command
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param string $fileName
      */
-    private function getFormattedSequence(InputInterface $input, string $fileName)
+    private function createSequence(InputInterface $input, string $fileName)
     {
         $this->io->text('[' . date('H:i:s') . '] Parsing file');
         $parser = new Parser();
         $parser->parseFile($fileName);
         $eventCalls = $parser->getEventCalls();
         $summaryCalls = $parser->getSummaryCalls();
-
-//        foreach ($summaryCalls as $call) {
-//            error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
-//        }
-//        error_log('*************************');
-//        foreach ($eventCalls as $call) {
-//            if ($call->getId() == 171) {
-//                error_log('[' . $call->getId() . '] ' . $call->getToClass() . ' --> ' . $call->getMethod() . ' [' . implode(', ', $call->getSubCallIds()) . ']');
-//            }
-//        }
-//die();
 
         $this->io->text('[' . date('H:i:s') . '] Indexing calls');
         $callQueueIndexBuilder = new CallQueueIndexBuilder($eventCalls);
@@ -171,9 +166,12 @@ class GenerateCommand extends Command
 
         $this->io->text('[' . date('H:i:s') . '] Formatting sequence');
         $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
-
-//        return $sequenceFormatter->format(static::TEMP_OUTPUT_FILE);
         $sequenceFormatter->format(static::TEMP_OUTPUT_FILE);
+
+        $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $this->exportFormat);
+        $this->generateOutput();
+
+        $this->io->success('[' . date('H:i:s') . '] Process complete!');
     }
 
     /**
@@ -212,5 +210,26 @@ class GenerateCommand extends Command
         }
 
         return $sequence;
+    }
+
+    /**
+     * Show on screen, plantuml file or image.
+     */
+    private function generateOutput()
+    {
+        switch ($this->exportFormat) {
+            case static::EXPORT_FORMAT_SCREEN:
+                echo file_get_contents(static::TEMP_OUTPUT_FILE);
+                // @todo delete file after showing
+                break;
+            case static::EXPORT_FORMAT_FILE:
+                rename(static::TEMP_OUTPUT_FILE, $this->outputTo . DIRECTORY_SEPARATOR . $this->outputFileName);
+                break;
+            case static::EXPORT_FORMAT_IMAGE:
+                rename(static::TEMP_OUTPUT_FILE, $this->outputTo . DIRECTORY_SEPARATOR . $this->outputFileName);
+                $this->io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
+                shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $this->diagramSize . ' -Xmx' . $this->memory . ' -jar ' . $this->jarFileName . ' -graphvizdot "' . $this->dotFileName . '"' . ' "' . $this->outputTo . DIRECTORY_SEPARATOR . $this->outputFileName . '"');
+                break;
+        }
     }
 }

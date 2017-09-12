@@ -19,8 +19,8 @@ class NotDeeperThanFilter implements FilterInterface
      */
     public function __construct(string $toClass, string $method)
     {
-        $this->toClass = $toClass;
-        $this->method = $method;
+        $this->toClass = str_replace('.', '\\', $toClass);
+        $this->method = str_replace('()', '', $method);
     }
 
     /**
