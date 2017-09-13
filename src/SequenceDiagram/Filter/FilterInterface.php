@@ -2,6 +2,7 @@
 
 namespace CallgrindToPlantUML\SequenceDiagram\Filter;
 
+use CallgrindToPlantUML\SequenceDiagram\Call;
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 
 interface FilterInterface
@@ -13,5 +14,14 @@ interface FilterInterface
      *
      * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
      */
-    public function apply(Sequence $sequence): Sequence;
+//    public function apply(Sequence $sequence): Sequence;
+
+    /**
+     * Check if call is valid or not.
+     *
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    public function isCallValid(Call $call): bool;
 }

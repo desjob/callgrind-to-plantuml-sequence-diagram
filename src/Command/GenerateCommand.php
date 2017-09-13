@@ -12,6 +12,7 @@ use CallgrindToPlantUML\SequenceDiagram\Filter\StartFromFilter;
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
+use CallgrindToPlantUML\SequenceDiagram\SequenceFilter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -29,6 +30,15 @@ class GenerateCommand extends Command
 
     /** @var \Symfony\Component\Console\Style\SymfonyStyle */
     private $io;
+
+    /** @var string */
+    private $filterNotDeeperThan;
+
+    /** @var string */
+    private $filterExcludeNativeFunctionCalls;
+
+    /** @var string */
+    private $filterStartFrom;
 
     /** @var string */
     private $dotFileName;
@@ -50,6 +60,9 @@ class GenerateCommand extends Command
 
     /** @var string */
     private $exportFormat;
+
+    /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface[] */
+    private $filters;
 
     /**
      * Configure command.
@@ -84,19 +97,19 @@ class GenerateCommand extends Command
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $fileName = $input->getArgument('filename');
         if (!is_readable($fileName)) {
-            throw new \InvalidArgumentException('given filename ' . $fileName . ' is not readable');
+            throw new \InvalidArgumentException('Given filename ' . $fileName . ' is not readable');
         }
 
         $this->filterNotDeeperThan = $input->getOption('not-deeper-than');
         $this->filterExcludeNativeFunctionCalls = $input->getOption('exclude-native-function-calls');
         $this->filterStartFrom = $input->getOption('start-from');
+        $this->filters = $this->getFilters();
 
         $this->io = new SymfonyStyle($input, $output);
         $this->io->title('CallgrindToPlantUML');
@@ -126,7 +139,7 @@ class GenerateCommand extends Command
             $this->checkOutputDir($this->outputTo);
         }
 
-        $this->createSequence($input, $fileName);
+        $this->createSequence($fileName);
     }
 
     /**
@@ -142,11 +155,12 @@ class GenerateCommand extends Command
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param string $fileName
      */
-    private function createSequence(InputInterface $input, string $fileName)
+    private function createSequence(string $fileName)
     {
+        $timeStart = new \DateTime();
+
         $this->io->text('[' . date('H:i:s') . '] Parsing file');
         $parser = new Parser();
         $parser->parseFile($fileName);
@@ -161,55 +175,58 @@ class GenerateCommand extends Command
         $sequenceBuilder = new SequenceBuilder($callQueueIndex, $summaryCalls);
         $fullSequence = $sequenceBuilder->build();
 
-        $this->io->text('[' . date('H:i:s') . '] Applying filters');
-        $filteredSequence = $this->applyFilters($input, $fullSequence);
+        $filteredSequence = $fullSequence;
+        if (!empty($this->filters)) {
+            $this->io->text('[' . date('H:i:s') . '] Applying filters (this process may take a while)');
+            $sequenceFilter = new SequenceFilter($this->io, $this->filters, $fullSequence);
+            $filteredSequence = $sequenceFilter->apply();
+        }
 
         $this->io->text('[' . date('H:i:s') . '] Formatting sequence');
         $sequenceFormatter = new SequenceFormatter($filteredSequence, new CallFormatter());
         $sequenceFormatter->format(static::TEMP_OUTPUT_FILE);
 
-        $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $this->exportFormat);
+        $this->io->text('[' . date('H:i:s') . '] Exporting to ' . $this->exportFormat . ' (this process may take a while)');
         $this->generateOutput();
 
-        $this->io->success('[' . date('H:i:s') . '] Process complete!');
+        $timeEnd = new \DateTime();
+        $this->io->success('[' . date_diff($timeStart, $timeEnd)->format('%H:%I:%S') . '] Process complete!');
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param \CallgrindToPlantUML\SequenceDiagram\Sequence $sequence
+     * Check if format of filters is correct.
      *
-     * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
+     * @return \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface[]
+     *
+     * @throws \InvalidArgumentException
      */
-    private function applyFilters(InputInterface $input, Sequence $sequence)
+    private function getFilters()
     {
-        foreach ($input->getOption('not-deeper-than') as $notDeeperThanCall) {
+        $filters = array();
+        foreach ($this->filterNotDeeperThan as $notDeeperThanCall) {
             $parts = explode('::', $notDeeperThanCall);
-
             if (count($parts) === 2) {
-                $filter = new NotDeeperThanFilter($parts[0], $parts[1]);
-                $sequence = $filter->apply($sequence);
+                $filters[] = new NotDeeperThanFilter($parts[0], $parts[1]);
             } else {
-                throw new \InvalidArgumentException('given value `'.$notDeeperThanCall.'` for not-deeper-than is invalid. use format class::method');
+                throw new \InvalidArgumentException('Given value `' . $notDeeperThanCall . '` for not-deeper-than is invalid. use format class::method');
             }
         }
 
-        if ($input->getOption('exclude-native-function-calls')) {
-            $filter = new NativeFunctionFilter();
-            $sequence = $filter->apply($sequence);
+        if ($this->filterExcludeNativeFunctionCalls) {
+//            $filters[] = new NativeFunctionFilter();
+            $filters[] = new NotDeeperThanFilter(Parser::PHP_MAIN);
         }
 
-        if ($startFrom = $input->getOption('start-from')) {
-            $parts = explode('::', $startFrom);
-
+        if ($this->filterStartFrom) {
+            $parts = explode('::', $this->filterStartFrom);
             if (count($parts) === 2) {
-                $filter = new StartFromFilter($parts[0], $parts[1]);
-                $sequence = $filter->apply($sequence);
+                $filters[] = new StartFromFilter($parts[0], $parts[1]);
             } else {
-                throw new \InvalidArgumentException('given value `'.$startFrom.'` for start-from is invalid. use format class::method');
+                throw new \InvalidArgumentException('Given value `' . $this->filterStartFrom . '` for start-from is invalid. use format class::method');
             }
         }
 
-        return $sequence;
+        return $filters;
     }
 
     /**
@@ -227,7 +244,6 @@ class GenerateCommand extends Command
                 break;
             case static::EXPORT_FORMAT_IMAGE:
                 rename(static::TEMP_OUTPUT_FILE, $this->outputTo . DIRECTORY_SEPARATOR . $this->outputFileName);
-                $this->io->text('[' . date('H:i:s') . '] Converting to png (this process may take a few minutes)');
                 shell_exec('java' . ' -DPLANTUML_LIMIT_SIZE=' . $this->diagramSize . ' -Xmx' . $this->memory . ' -jar ' . $this->jarFileName . ' -graphvizdot "' . $this->dotFileName . '"' . ' "' . $this->outputTo . DIRECTORY_SEPARATOR . $this->outputFileName . '"');
                 break;
         }

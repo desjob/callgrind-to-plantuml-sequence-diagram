@@ -34,4 +34,12 @@ class Sequence
     {
         return count($this->calls) > 0;
     }
+
+    /**
+     * @return int
+     */
+    public function countItems(): int
+    {
+        return count($this->calls);
+    }
 }

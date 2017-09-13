@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace CallgrindToPlantUML\SequenceDiagram\Filter;
 
 use CallgrindToPlantUML\Callgrind\Parser;
+use CallgrindToPlantUML\SequenceDiagram\Call;
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 
 class NativeFunctionFilter implements FilterInterface
@@ -24,5 +25,15 @@ class NativeFunctionFilter implements FilterInterface
         }
 
         return $filteredSequence;
+    }
+
+    /**
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    public function isCallValid(Call $call): bool
+    {
+        return $call->getFromClass() !== Parser::PHP_MAIN && $call->getToClass() !== Parser::PHP_MAIN;
     }
 }
