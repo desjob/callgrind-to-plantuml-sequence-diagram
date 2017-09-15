@@ -23,5 +23,5 @@ interface FilterInterface
      *
      * @return bool
      */
-    public function isCallValid(Call $call): bool;
+    public function isCallValid(Call $call, int $i): bool;
 }

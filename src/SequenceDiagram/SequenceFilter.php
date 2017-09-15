@@ -39,11 +39,11 @@ class SequenceFilter
             $i++;
             $call = $this->sequence->pop();
 //            error_log(PHP_EOL . '['.$i.'] ****************************************');
-            if ($this->isCallValid($call)) {
-                error_log('          adding: ' . $call->getFromClass() . ' -> ' . $call->getToClass() . ' :: ' . $call->getMethod());
+            if ($this->isCallValid($call, $i)) {
+//                error_log('          adding: ' . $call->getFromClass() . ' -> ' . $call->getToClass() . ' :: ' . $call->getMethod());
                 $filteredSequence->add($call);
             }
-            if ($i == 500) {
+            if ($i == 88304) {
 //                die();
             }
             $this->io->progressAdvance();
@@ -57,11 +57,11 @@ class SequenceFilter
      *
      * @return bool
      */
-    private function isCallValid(Call $call): bool
+    private function isCallValid(Call $call, int $i): bool
     {
         /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface $filter */
         foreach ($this->filters as $filter) {
-            if (!$filter->isCallValid($call)) {
+            if (!$filter->isCallValid($call, $i)) {
                 return false;
             }
         }

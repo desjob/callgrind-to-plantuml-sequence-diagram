@@ -74,23 +74,36 @@ class StartFromFilter implements FilterInterface
      *
      * @return bool
      */
-    public function isCallValid(Call $call): bool
+    public function isCallValid(Call $call, int $i): bool
     {
         if (!$this->startAdding) {
+            $this->writeLog($i, 'not startAdding');
+            $this->writeLog($i, $call->getToClass() . ' -> ' . $call->getMethod());
             if ($call->getToClass() === $this->toClass && ($this->method === null || $call->getMethod() === $this->method)) {
+                $this->writeLog($i, 'startAdding = true');
                 $this->startAdding = true;
                 $this->filteringFromCall = $call;
             }
         } else {
+            $this->writeLog($i, 'startAdding');
+            $this->writeLog($i, ($call->isReturnCall() ? 'return' : 'not return') . ' From: ' . $call->getFromClass() . ' To:' . $call->getToClass());
             if ($call->isReturnCall() &&
                 $call->getFromClass() === $this->filteringFromCall->getToClass() &&
                 $call->getToClass() === $this->filteringFromCall->getFromClass()
             ) {
+                $this->writeLog($i, 'startAdding = false');
                 $this->startAdding = false;
                 $this->filteringFromCall = null;
             }
         }
 
         return $this->startAdding;
+    }
+
+    private function writeLog(int $i, string $text)
+    {
+//        if ($i >= 88278 && $i <= 88303) {
+//            error_log($text);
+//        }
     }
 }

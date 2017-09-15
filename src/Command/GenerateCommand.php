@@ -204,6 +204,14 @@ class GenerateCommand extends Command
     {
         $filters = array();
         foreach ($this->filterNotDeeperThan as $notDeeperThanCall) {
+            // Allow for partial matches that end in token %.
+            if (substr($notDeeperThanCall, -1) === '%') {
+                $filters[] = new NotDeeperThanFilter($notDeeperThanCall);
+
+                continue;
+            }
+
+            // Verify that it has ::.
             $parts = explode('::', $notDeeperThanCall);
             if (count($parts) === 2) {
                 $filters[] = new NotDeeperThanFilter($parts[0], $parts[1]);
@@ -213,8 +221,7 @@ class GenerateCommand extends Command
         }
 
         if ($this->filterExcludeNativeFunctionCalls) {
-//            $filters[] = new NativeFunctionFilter();
-            $filters[] = new NotDeeperThanFilter(Parser::PHP_MAIN);
+//            $filters[] = new NotDeeperThanFilter(Parser::PHP_MAIN);
         }
 
         if ($this->filterStartFrom) {
