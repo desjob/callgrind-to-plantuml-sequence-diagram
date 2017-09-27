@@ -5,6 +5,7 @@ namespace CallgrindToPlantUML\Tests\SequenceDiagram;
 use CallgrindToPlantUML\Callgrind\Call;
 use CallgrindToPlantUML\Callgrind\CallQueue;
 use CallgrindToPlantUML\Callgrind\CallQueueIndex;
+use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -70,7 +71,7 @@ class SequenceBuilderTest extends TestCase
         $callQueueIndex->add(8, $callQueue);
 
         $callQueue = new CallQueue();
-        $callQueue->add(new Call(9, '', '{main}', array()));
+        $callQueue->add(new Call(9, '', Parser::MAIN_METHOD, array()));
         $callQueueIndex->add(9, $callQueue);
 
         $this->events = $callQueueIndex;

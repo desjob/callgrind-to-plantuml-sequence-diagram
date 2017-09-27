@@ -3,9 +3,7 @@ declare(strict_types=1);
 
 namespace CallgrindToPlantUML\SequenceDiagram\Filter;
 
-use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\SequenceDiagram\Call;
-use CallgrindToPlantUML\SequenceDiagram\Sequence;
 
 class StartFromFilter implements FilterInterface
 {
@@ -33,65 +31,21 @@ class StartFromFilter implements FilterInterface
     }
 
     /**
-     * @param \CallgrindToPlantUML\SequenceDiagram\Sequence $sequence
-     *
-     * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
-     */
-//    public function apply(Sequence $sequence): Sequence
-//    {
-//        $startAdding = false;
-//        $startedFromCall = null;
-//        $filteredSequence = new Sequence();
-//        while ($sequence->hasItems()) {
-//            $call = $sequence->pop();
-//
-//            // check if we need to start adding yet
-//            if(!$startAdding && $call->getToClass() === $this->toClass && $call->getMethod() === $this->method) {
-//                $startAdding = true;
-//                $startedFromCall = $call;
-//            }
-//
-//            if(!$startAdding) {
-//                continue;
-//            } else {
-//                $filteredSequence->add($call);
-//
-//                //once we reach the returncall of the $startedFromCall, stop adding
-//                if($call->isReturnCall() && $call->getToClass() === $startedFromCall->getFromClass() && $call->getFromClass() === $startedFromCall->getToClass()) {
-//                    $startAdding = false;
-//                    $startedFromCall = null;
-//                }
-//            }
-//        }
-//
-//        return $filteredSequence;
-//    }
-
-    /**
      * If before start from class::method, return false, if not, return true.
      *
      * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
      *
      * @return bool
      */
-    public function isCallValid(Call $call, int $i): bool
+    public function isCallValid(Call $call): bool
     {
         if (!$this->startAdding) {
-            $this->writeLog($i, 'not startAdding');
-            $this->writeLog($i, $call->getToClass() . ' -> ' . $call->getMethod());
-            if ($call->getToClass() === $this->toClass && ($this->method === null || $call->getMethod() === $this->method)) {
-                $this->writeLog($i, 'startAdding = true');
+            if ($this->isTheCallToBeFiltered($call)) {
                 $this->startAdding = true;
                 $this->filteringFromCall = $call;
             }
         } else {
-            $this->writeLog($i, 'startAdding');
-            $this->writeLog($i, ($call->isReturnCall() ? 'return' : 'not return') . ' From: ' . $call->getFromClass() . ' To:' . $call->getToClass());
-            if ($call->isReturnCall() &&
-                $call->getFromClass() === $this->filteringFromCall->getToClass() &&
-                $call->getToClass() === $this->filteringFromCall->getFromClass()
-            ) {
-                $this->writeLog($i, 'startAdding = false');
+            if ($this->isTheFilteringReturnCall($call)) {
                 $this->startAdding = false;
                 $this->filteringFromCall = null;
             }
@@ -100,10 +54,30 @@ class StartFromFilter implements FilterInterface
         return $this->startAdding;
     }
 
-    private function writeLog(int $i, string $text)
+    /**
+     * Checks if this call is the one that we should start from.
+     *
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    private function isTheCallToBeFiltered(Call $call): bool
     {
-//        if ($i >= 88278 && $i <= 88303) {
-//            error_log($text);
-//        }
+        return $call->getToClass() === $this->toClass && ($this->method === null || $call->getMethod() === $this->method);
+    }
+
+    /**
+     * Checks if this call is the return call of the one that we should start from.
+     *
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    private function isTheFilteringReturnCall(Call $call): bool
+    {
+        return $call->isReturnCall() &&
+            $call->getFromClass() === $this->filteringFromCall->getToClass() &&
+            $call->getToClass() === $this->filteringFromCall->getFromClass() &&
+            $call->getMethod() === $this->filteringFromCall->getMethod();
     }
 }

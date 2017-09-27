@@ -7,9 +7,7 @@ use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
 use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\PlantUML\SequenceFormatter;
-use CallgrindToPlantUML\SequenceDiagram\Filter\NativeFunctionFilter;
 use CallgrindToPlantUML\SequenceDiagram\Filter\StartFromFilter;
-use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
 use CallgrindToPlantUML\SequenceDiagram\SequenceFilter;
@@ -180,6 +178,7 @@ class GenerateCommand extends Command
             $this->io->text('[' . date('H:i:s') . '] Applying filters (this process may take a while)');
             $sequenceFilter = new SequenceFilter($this->io, $this->filters, $fullSequence);
             $filteredSequence = $sequenceFilter->apply();
+            $this->io->text(PHP_EOL);
         }
 
         $this->io->text('[' . date('H:i:s') . '] Formatting sequence');
@@ -206,7 +205,7 @@ class GenerateCommand extends Command
         foreach ($this->filterNotDeeperThan as $notDeeperThanCall) {
             // Allow for partial matches that end in token %.
             if (substr($notDeeperThanCall, -1) === '%') {
-                $filters[] = new NotDeeperThanFilter($notDeeperThanCall);
+                $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter($notDeeperThanCall);
 
                 continue;
             }
@@ -214,20 +213,21 @@ class GenerateCommand extends Command
             // Verify that it has ::.
             $parts = explode('::', $notDeeperThanCall);
             if (count($parts) === 2) {
-                $filters[] = new NotDeeperThanFilter($parts[0], $parts[1]);
+                $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter($parts[0], $parts[1]);
             } else {
                 throw new \InvalidArgumentException('Given value `' . $notDeeperThanCall . '` for not-deeper-than is invalid. use format class::method');
             }
         }
 
-        if ($this->filterExcludeNativeFunctionCalls) {
-//            $filters[] = new NotDeeperThanFilter(Parser::PHP_MAIN);
-        }
+//        @todo rethink native function calls exclusion.
+//        if ($this->filterExcludeNativeFunctionCalls) {
+//            $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter(Parser::PHP_MAIN);
+//        }
 
         if ($this->filterStartFrom) {
             $parts = explode('::', $this->filterStartFrom);
             if (count($parts) === 2) {
-                $filters[] = new StartFromFilter($parts[0], $parts[1]);
+                $filters['StartFromFilter'] = new StartFromFilter($parts[0], $parts[1]);
             } else {
                 throw new \InvalidArgumentException('Given value `' . $this->filterStartFrom . '` for start-from is invalid. use format class::method');
             }

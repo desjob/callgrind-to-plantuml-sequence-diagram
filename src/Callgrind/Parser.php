@@ -23,6 +23,7 @@ class Parser
     const EVENTS_AND_SUMMARY_SPLIT_REGEX = '/\s+events: Time\s+|\s+summary:\s+[0-9]+\s+/';
     const NEW_LINE_SPLIT_REGEX = "/((\r?\n)|(\r\n?))/";
     const PHP_MAIN = 'php';
+    const MAIN_METHOD = '{main}';
 
     /**
      * @param string $callGrind
@@ -65,7 +66,7 @@ class Parser
                 if (substr($line, 0, 4) === "fn=(") {
                     if ($call = $this->getCall($line)) {
                         $this->eventCalls[] = $call;
-                        if ($call->getMethod() === "{main}") {
+                        if ($call->getMethod() === static::MAIN_METHOD) {
                             $mainId = $call->getId();
                         }
                     }

@@ -2,6 +2,7 @@
 
 namespace CallgrindToPlantUML\SequenceDiagram;
 
+use CallgrindToPlantUML\Callgrind\Parser;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class SequenceFilter
@@ -33,19 +34,13 @@ class SequenceFilter
     public function apply(): Sequence
     {
         $this->io->progressStart($this->sequence->countItems());
-        $i = 0;
         $filteredSequence = new Sequence();
         while ($this->sequence->hasItems()) {
-            $i++;
             $call = $this->sequence->pop();
-//            error_log(PHP_EOL . '['.$i.'] ****************************************');
-            if ($this->isCallValid($call, $i)) {
-//                error_log('          adding: ' . $call->getFromClass() . ' -> ' . $call->getToClass() . ' :: ' . $call->getMethod());
+            if ($this->isCallValid($call)) {
                 $filteredSequence->add($call);
             }
-            if ($i == 88304) {
-//                die();
-            }
+
             $this->io->progressAdvance();
         }
 
@@ -57,15 +52,41 @@ class SequenceFilter
      *
      * @return bool
      */
-    private function isCallValid(Call $call, int $i): bool
+    private function isCallValid(Call $call): bool
     {
-        /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface $filter */
-        foreach ($this->filters as $filter) {
-            if (!$filter->isCallValid($call, $i)) {
+        // Always add main call.
+        if ($call->getMethod() === Parser::MAIN_METHOD) {
+            return true;
+        }
+
+        // If there is a start from filter, nothing else matters until that one is valid.
+        if (!$this->isStartFromFilterValid($call)) {
+            return false;
+        }
+
+        /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter $filter */
+        foreach ($this->filters['NotDeeperThanFilter'] as $filter) {
+            if (!$filter->isCallValid($call)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     * @param int $i
+     *
+     * @return bool
+     */
+    private function isStartFromFilterValid(Call $call): bool
+    {
+        $filter = $this->filters['StartFromFilter'];
+        if (empty($filter)) {
+            return true;
+        }
+
+        return $filter->isCallValid($call);
     }
 }

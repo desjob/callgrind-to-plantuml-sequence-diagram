@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace CallgrindToPlantUML\SequenceDiagram\Filter;
 
 use CallgrindToPlantUML\SequenceDiagram\Call;
-use CallgrindToPlantUML\SequenceDiagram\Sequence;
 
 class NotDeeperThanFilter implements FilterInterface
 {
@@ -34,84 +33,21 @@ class NotDeeperThanFilter implements FilterInterface
     }
 
     /**
-     * @param \CallgrindToPlantUML\SequenceDiagram\Sequence $sequence
-     *
-     * @return \CallgrindToPlantUML\SequenceDiagram\Sequence
-     */
-//    public function apply(Sequence $sequence): Sequence
-//    {
-//        $filteredSequence = new Sequence();
-//        $keepAdding = true;
-//        $filteringFromCall = null;
-//        while ($sequence->hasItems()) {
-//            $call = $sequence->pop();
-//            if ($keepAdding) {
-//                //not in filtering mode, keep adding everything
-//                $filteredSequence->add($call);
-//
-//                //check if we should start filtering
-//                if ($call->getToClass() === $this->toClass) {
-//                    //match found, start filtering out until we hit the return call for the current call
-//                    $keepAdding = false;
-//                    $filteringFromCall = $call;
-//                }
-//            } else {
-//                //check if we are at the return call already
-//                if ($call->isReturnCall() &&
-//                    $call->getFromClass() === $filteringFromCall->getToClass() &&
-//                    $call->getToClass() === $filteringFromCall->getFromClass()
-//                ) {
-//                    //return call found, turn off the filter
-//                    $filteringFromCall = null;
-//                    $keepAdding = true;
-//
-//                    //add the return call
-//                    $filteredSequence->add($call);
-//                }
-//            }
-//        }
-//
-//        return $filteredSequence;
-//    }
-
-    /**
      * If we are deeper than the filter class::method, return false, if not, return true.
      *
      * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
      *
      * @return bool
      */
-    public function isCallValid(Call $call, int $i): bool
+    public function isCallValid(Call $call): bool
     {
         if (!$this->deeperThanFilter) {
-
-            $this->writeLog($i, 'NOT deeperThanFilter');
-            $this->writeLog($i, $call->getFromClass() . ' ---> ' . $call->getToClass() . ' :: ' . $call->getMethod());
-            if ($call->getMethod() !== '{main}') {$this->writeLog($i, 'OK 1');}
-            if ($call->getToClass() === $this->toClass) {$this->writeLog($i, 'OK 2');}
-            if ($this->method === null || $call->getMethod() === $this->method) {$this->writeLog($i, 'OK 3');}
-
-            if (/*$call->getMethod() !== '{main}' &&*/
-                $this->classStartsWith($this->toClass, $call->getFromClass()) &&
-                // ($call->getFromClass() === $this->toClass /*|| $call->getToClass() === $this->toClass*/) &&
-                ($this->method === null || $call->getMethod() === $this->method)
-            ) {
-                $this->writeLog($i, 'deeperThanFilter = true');
+            if ($this->isTheCallToBeFiltered($call)) {
                 $this->deeperThanFilter = true;
                 $this->filteringFromCall = $call;
             }
         } else {
-            $this->writeLog($i, 'deeperThanFilter');
-            if ($call->isReturnCall()) {$this->writeLog($i, 'OK 1');}
-            if ($call->getFromClass() === $this->filteringFromCall->getToClass()) {$this->writeLog($i, 'OK 2');}
-            if ($call->getToClass() === $this->filteringFromCall->getFromClass()) {$this->writeLog($i, 'OK 3');}
-            $this->writeLog($i, ($call->isReturnCall() ? 'return call ' : 'not return call') . ' && ' . $call->getFromClass() . ' vs ' . $this->filteringFromCall->getToClass() . ' && ' . $call->getToClass() . ' && ' . $this->filteringFromCall->getFromClass());
-
-            if ($call->isReturnCall() &&
-                $call->getFromClass() === $this->filteringFromCall->getToClass() &&
-                $call->getToClass() === $this->filteringFromCall->getFromClass()
-            ) {
-                $this->writeLog($i, 'deeperThanFilter = false');
+            if ($this->isTheFilteringReturnCall($call)) {
                 $this->deeperThanFilter = false;
                 $this->filteringFromCall = null;
 
@@ -119,8 +55,37 @@ class NotDeeperThanFilter implements FilterInterface
             }
         }
 
-        $this->writeLog($i, 'return: ' . (!$this->deeperThanFilter ? 'yes' : 'no'));
         return !$this->deeperThanFilter;
+    }
+
+
+    /**
+     * Checks if this call is the one that we should not go deeper than.
+     *
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    private function isTheCallToBeFiltered(Call $call): bool
+    {
+        return !$call->isReturnCall() &&
+            $this->classStartsWith($this->toClass, $call->getFromClass()) &&
+            ($this->method === null || $call->getMethod() === $this->method);
+    }
+
+    /**
+     * Checks if this call is the return call of the one that we should not go deeper than.
+     *
+     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
+     *
+     * @return bool
+     */
+    private function isTheFilteringReturnCall(Call $call): bool
+    {
+        return $call->isReturnCall() &&
+            $call->getFromClass() === $this->filteringFromCall->getToClass() &&
+            $call->getToClass() === $this->filteringFromCall->getFromClass() &&
+            $call->getMethod() === $this->filteringFromCall->getMethod();
     }
 
     /**
@@ -142,12 +107,5 @@ class NotDeeperThanFilter implements FilterInterface
         }
 
         return $haystack === $needle;
-    }
-
-    private function writeLog(int $i, string $text)
-    {
-//        if ($i >= 1875 && $i <= 1880) {
-//            error_log($text);
-//        }
     }
 }

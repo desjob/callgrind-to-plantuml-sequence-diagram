@@ -4,6 +4,7 @@ namespace CallgrindToPlantUML\Tests\Callgrind;
 
 use CallgrindToPlantUML\Callgrind\Call;
 use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
+use CallgrindToPlantUML\Callgrind\Parser;
 use PHPUnit\Framework\TestCase;
 
 class CallQueueIndexBuilderTest extends TestCase
@@ -40,7 +41,7 @@ class CallQueueIndexBuilderTest extends TestCase
         $this->calls[] = new Call(4, 'UserService', 'findUser', array(7));
         $this->calls[] = new Call(8, 'php::Exception', 'getMessage', array());
         $this->calls[] = new Call(6, 'Controller', 'execute', array(4, 8));
-        $this->calls[] = new Call(9, '', '{main}', array());
+        $this->calls[] = new Call(9, '', Parser::MAIN_METHOD, array());
     }
 
     public function test()
