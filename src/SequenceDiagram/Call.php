@@ -17,18 +17,28 @@ class Call
     /** @var bool */
     private $returnCall;
 
+    /** @var bool */
+    private $visible;
+
     /**
      * @param string $fromClass
      * @param string $toClass
      * @param string $method
      * @param bool $returnCall
+     * @param bool $visible
      */
-    public function __construct(string $fromClass, string $toClass, string $method, bool $returnCall = false)
-    {
+    public function __construct(
+        string $fromClass,
+        string $toClass,
+        string $method,
+        bool $returnCall = false,
+        bool $visible = true
+    ) {
         $this->fromClass = $fromClass;
         $this->toClass = $toClass;
         $this->method = $method;
         $this->returnCall = $returnCall;
+        $this->visible = $visible;
     }
 
     /**
@@ -61,5 +71,25 @@ class Call
     public function isReturnCall(): bool
     {
         return $this->returnCall;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isVisible(): bool
+    {
+        return $this->visible;
+    }
+
+    /**
+     * @param bool $visible
+     *
+     * @return $this
+     */
+    public function setVisible(bool $visible)
+    {
+        $this->visible = $visible;
+
+        return $this;
     }
 }

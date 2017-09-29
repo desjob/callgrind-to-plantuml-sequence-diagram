@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace CallgrindToPlantUML\PlantUML;
+
 use CallgrindToPlantUML\SequenceDiagram\Sequence;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
 
@@ -9,6 +10,7 @@ class SequenceFormatter
 {
     /** @var \CallgrindToPlantUML\SequenceDiagram\Sequence */
     private $sequence;
+
     /** @var \CallgrindToPlantUML\PlantUML\CallFormatter */
     private $callFormatter;
 
@@ -28,19 +30,16 @@ class SequenceFormatter
     public function format(string $filename)
     {
         $fp = fopen($filename, 'w');
-//        $formattedOutput = '@startuml'.PHP_EOL;
-//        $formattedOutput .= 'actor '.SequenceBuilder::ACTOR.PHP_EOL;
         fwrite($fp, '@startuml'.PHP_EOL . 'actor '.SequenceBuilder::ACTOR.PHP_EOL);
 
         while($this->sequence->hasItems()) {
-//            $formattedOutput .= $this->callFormatter->format($this->sequence->pop());
-            fwrite($fp, $this->callFormatter->format($this->sequence->pop()));
+            $call = $this->sequence->pop();
+            if ($call->isVisible()) {
+                fwrite($fp, $this->callFormatter->format($call));
+            }
         }
 
-//        $formattedOutput .= '@enduml'.PHP_EOL;
         fwrite($fp, '@enduml'.PHP_EOL);
         fclose($fp);
-
-//        return $formattedOutput;
     }
 }

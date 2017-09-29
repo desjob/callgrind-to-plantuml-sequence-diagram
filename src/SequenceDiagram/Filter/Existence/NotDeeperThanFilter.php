@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CallgrindToPlantUML\SequenceDiagram\Filter;
+namespace CallgrindToPlantUML\SequenceDiagram\Filter\Existence;
 
 use CallgrindToPlantUML\SequenceDiagram\Call;
 

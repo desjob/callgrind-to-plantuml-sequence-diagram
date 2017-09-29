@@ -7,9 +7,11 @@ use CallgrindToPlantUML\Callgrind\CallQueueIndexBuilder;
 use CallgrindToPlantUML\Callgrind\Parser;
 use CallgrindToPlantUML\PlantUML\CallFormatter;
 use CallgrindToPlantUML\PlantUML\SequenceFormatter;
-use CallgrindToPlantUML\SequenceDiagram\Filter\StartFromFilter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\Existence\StartFromFilter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\Visibility\NativeFunctionFilter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\Visibility\SelfCallReturnFilter;
 use CallgrindToPlantUML\SequenceDiagram\SequenceBuilder;
-use CallgrindToPlantUML\SequenceDiagram\Filter\NotDeeperThanFilter;
+use CallgrindToPlantUML\SequenceDiagram\Filter\Existence\NotDeeperThanFilter;
 use CallgrindToPlantUML\SequenceDiagram\SequenceFilter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -29,7 +31,7 @@ class GenerateCommand extends Command
     /** @var \Symfony\Component\Console\Style\SymfonyStyle */
     private $io;
 
-    /** @var string */
+    /** @var array */
     private $filterNotDeeperThan;
 
     /** @var string */
@@ -59,8 +61,11 @@ class GenerateCommand extends Command
     /** @var string */
     private $exportFormat;
 
-    /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface[] */
-    private $filters;
+    /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\Existence\FilterInterface[] */
+    private $existencefilters;
+
+    /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\Visibility\FilterInterface[] */
+    private $visibilityfilters;
 
     /**
      * Configure command.
@@ -107,7 +112,8 @@ class GenerateCommand extends Command
         $this->filterNotDeeperThan = $input->getOption('not-deeper-than');
         $this->filterExcludeNativeFunctionCalls = $input->getOption('exclude-native-function-calls');
         $this->filterStartFrom = $input->getOption('start-from');
-        $this->filters = $this->getFilters();
+        $this->existencefilters = $this->getExistenceFilters();
+        $this->visibilityfilters = $this->getVisibilityFilters();
 
         $this->io = new SymfonyStyle($input, $output);
         $this->io->title('CallgrindToPlantUML');
@@ -174,9 +180,9 @@ class GenerateCommand extends Command
         $fullSequence = $sequenceBuilder->build();
 
         $filteredSequence = $fullSequence;
-        if (!empty($this->filters)) {
+        if (!empty($this->existencefilters || !empty($this->visibilityfilters))) {
             $this->io->text('[' . date('H:i:s') . '] Applying filters (this process may take a while)');
-            $sequenceFilter = new SequenceFilter($this->io, $this->filters, $fullSequence);
+            $sequenceFilter = new SequenceFilter($this->io, $this->existencefilters, $this->visibilityfilters, $fullSequence);
             $filteredSequence = $sequenceFilter->apply();
             $this->io->text(PHP_EOL);
         }
@@ -193,13 +199,13 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Check if format of filters is correct.
+     * Check if format of filters is correct and if so, add to array of existence filters.
      *
-     * @return \CallgrindToPlantUML\SequenceDiagram\Filter\FilterInterface[]
+     * @return \CallgrindToPlantUML\SequenceDiagram\Filter\Existence\FilterInterface[]
      *
      * @throws \InvalidArgumentException
      */
-    private function getFilters()
+    private function getExistenceFilters()
     {
         $filters = array();
         foreach ($this->filterNotDeeperThan as $notDeeperThanCall) {
@@ -219,11 +225,6 @@ class GenerateCommand extends Command
             }
         }
 
-//        @todo rethink native function calls exclusion.
-//        if ($this->filterExcludeNativeFunctionCalls) {
-//            $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter(Parser::PHP_MAIN);
-//        }
-
         if ($this->filterStartFrom) {
             $parts = explode('::', $this->filterStartFrom);
             if (count($parts) === 2) {
@@ -231,6 +232,27 @@ class GenerateCommand extends Command
             } else {
                 throw new \InvalidArgumentException('Given value `' . $this->filterStartFrom . '` for start-from is invalid. use format class::method');
             }
+        }
+
+        return $filters;
+    }
+
+    /**
+     * Check if format of filters is correct and if so, add to array of visibiity filters.
+     *
+     * @return \CallgrindToPlantUML\SequenceDiagram\Filter\Existence\FilterInterface[]
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function getVisibilityFilters()
+    {
+        $filters = array();
+
+        // Always add visibility filter for returns of same class.
+        $filters[] = new SelfCallReturnFilter();
+
+        if ($this->filterExcludeNativeFunctionCalls) {
+            $filters[] = new NativeFunctionFilter();
         }
 
         return $filters;

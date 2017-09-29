@@ -1,9 +1,8 @@
 <?php
 
-namespace CallgrindToPlantUML\SequenceDiagram\Filter;
+namespace CallgrindToPlantUML\SequenceDiagram\Filter\Existence;
 
 use CallgrindToPlantUML\SequenceDiagram\Call;
-use CallgrindToPlantUML\SequenceDiagram\Sequence;
 
 interface FilterInterface
 {
