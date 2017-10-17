@@ -30,7 +30,7 @@ class SequenceFormatter
     public function format(string $filename)
     {
         $fp = fopen($filename, 'w');
-        fwrite($fp, '@startuml'.PHP_EOL . 'actor '.SequenceBuilder::ACTOR.PHP_EOL);
+        fwrite($fp, '@startuml' . PHP_EOL . 'actor ' . SequenceBuilder::ACTOR . PHP_EOL);
 
         while($this->sequence->hasItems()) {
             $call = $this->sequence->pop();

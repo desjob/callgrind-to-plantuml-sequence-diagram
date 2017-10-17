@@ -17,10 +17,10 @@ class CallFormatter
         $fromClass = $this->replaceNameSpace($call->getFromClass());
         $toClass = $this->replaceNameSpace($call->getToClass());
         $method = $call->getMethod();
-        if($call->isReturnCall()) {
-            $callText = "{$toClass} <-- {$fromClass}".PHP_EOL;
+        if ($call->isReturnCall()) {
+            $callText = "{$toClass} <-- {$fromClass}" . PHP_EOL;
         } else {
-            $callText = "{$fromClass} -> {$toClass}: {$method}()".PHP_EOL;
+            $callText = "{$fromClass} -> {$toClass}: {$method}()" . PHP_EOL;
         }
 
         return $callText;

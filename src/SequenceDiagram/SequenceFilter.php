@@ -65,34 +65,14 @@ class SequenceFilter
             return true;
         }
 
-        // If there is a start from filter, nothing else matters until that one is valid.
-        if (!$this->isStartFromFilterValid($call)) {
-            return false;
-        }
-
         /** @var \CallgrindToPlantUML\SequenceDiagram\Filter\Existence\NotDeeperThanFilter $filter */
-        foreach ($this->existenceFilters['NotDeeperThanFilter'] as $filter) {
+        foreach ($this->existenceFilters as $filter) {
             if (!$filter->isCallValid($call)) {
                 return false;
             }
         }
 
         return true;
-    }
-
-    /**
-     * @param \CallgrindToPlantUML\SequenceDiagram\Call $call
-     *
-     * @return bool
-     */
-    private function isStartFromFilterValid(Call $call): bool
-    {
-        $filter = $this->existenceFilters['StartFromFilter'];
-        if (empty($filter)) {
-            return true;
-        }
-
-        return $filter->isCallValid($call);
     }
 
     /**

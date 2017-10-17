@@ -17,7 +17,7 @@ class Parser
     private $classNames = array();
     private $eventCallsParsed = false;
 
-    const FUNCTION_CALL_REGEX = '/^fn=\(([0-9]+)\)\s*([a-zA-Z0-9_{}\\\]*)(->|::)?([a-zA-Z-_]*)/';
+    const FUNCTION_CALL_REGEX = '/^fn=\(([0-9]+)\)\s*([a-zA-Z0-9_{}\\\]*)(->|::)?([a-zA-Z-_\\\{}]*)/';
     const FUNCTION_SUB_CALL_REGEX = '/^cfn=\(([0-9]+)\)/';
     const EMPTY_LINE_REGEX = '/^\s*$/';
     const EVENTS_AND_SUMMARY_SPLIT_REGEX = '/\s+events: Time\s+|\s+summary:\s+[0-9]+\s+/';

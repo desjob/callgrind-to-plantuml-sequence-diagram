@@ -208,10 +208,20 @@ class GenerateCommand extends Command
     private function getExistenceFilters()
     {
         $filters = array();
+
+        if ($this->filterStartFrom) {
+            $parts = explode('::', $this->filterStartFrom);
+            if (count($parts) === 2) {
+                $filters[] = new StartFromFilter($parts[0], $parts[1]);
+            } else {
+                throw new \InvalidArgumentException('Given value `' . $this->filterStartFrom . '` for start-from is invalid. use format class::method');
+            }
+        }
+
         foreach ($this->filterNotDeeperThan as $notDeeperThanCall) {
             // Allow for partial matches that end in token %.
             if (substr($notDeeperThanCall, -1) === '%') {
-                $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter($notDeeperThanCall);
+                $filters[] = new NotDeeperThanFilter($notDeeperThanCall);
 
                 continue;
             }
@@ -219,18 +229,9 @@ class GenerateCommand extends Command
             // Verify that it has ::.
             $parts = explode('::', $notDeeperThanCall);
             if (count($parts) === 2) {
-                $filters['NotDeeperThanFilter'][] = new NotDeeperThanFilter($parts[0], $parts[1]);
+                $filters[] = new NotDeeperThanFilter($parts[0], $parts[1]);
             } else {
                 throw new \InvalidArgumentException('Given value `' . $notDeeperThanCall . '` for not-deeper-than is invalid. use format class::method');
-            }
-        }
-
-        if ($this->filterStartFrom) {
-            $parts = explode('::', $this->filterStartFrom);
-            if (count($parts) === 2) {
-                $filters['StartFromFilter'] = new StartFromFilter($parts[0], $parts[1]);
-            } else {
-                throw new \InvalidArgumentException('Given value `' . $this->filterStartFrom . '` for start-from is invalid. use format class::method');
             }
         }
 
@@ -250,10 +251,6 @@ class GenerateCommand extends Command
 
         // Always add visibility filter for returns of same class.
         $filters[] = new SelfCallReturnFilter();
-
-        if ($this->filterExcludeNativeFunctionCalls) {
-            $filters[] = new NativeFunctionFilter();
-        }
 
         return $filters;
     }
