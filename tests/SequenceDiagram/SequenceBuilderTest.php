@@ -102,34 +102,34 @@ class SequenceBuilderTest extends TestCase
         $this->assertSame('__construct', $call->getMethod());
 
         $call = $result->pop();
-        $this->assertSame('UserService', $call->getFromClass());
-        $this->assertSame('User', $call->getToClass());
-        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
-
-        $call = $result->pop();
-        $this->assertSame('UserService', $call->getFromClass());
-        $this->assertSame('User', $call->getToClass());
-        $this->assertSame('__construct', $call->getMethod());
-
-        $call = $result->pop();
-        $this->assertSame('UserService', $call->getFromClass());
-        $this->assertSame('User', $call->getToClass());
-        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
-
-        $call = $result->pop();
-        $this->assertSame('UserService', $call->getFromClass());
-        $this->assertSame('User', $call->getToClass());
-        $this->assertSame('__construct', $call->getMethod());
-
-        $call = $result->pop();
-        $this->assertSame('UserService', $call->getFromClass());
-        $this->assertSame('User', $call->getToClass());
-        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
-
-        $call = $result->pop();
-        $this->assertSame(SequenceBuilder::ACTOR, $call->getFromClass());
+        $this->assertSame('User', $call->getFromClass());
         $this->assertSame('UserService', $call->getToClass());
-        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame('UserService', $call->getFromClass());
+        $this->assertSame('User', $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame('User', $call->getFromClass());
+        $this->assertSame('UserService', $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame('UserService', $call->getFromClass());
+        $this->assertSame('User', $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame('User', $call->getFromClass());
+        $this->assertSame('UserService', $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
+
+        $call = $result->pop();
+        $this->assertSame('UserService', $call->getFromClass());
+        $this->assertSame(SequenceBuilder::ACTOR, $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
     }
 
     /**
@@ -146,8 +146,8 @@ class SequenceBuilderTest extends TestCase
         $this->assertSame('__construct', $call->getMethod());
 
         $call = $result->pop();
-        $this->assertSame(SequenceBuilder::ACTOR, $call->getFromClass());
-        $this->assertSame('Controller', $call->getToClass());
-        $this->assertSame(SequenceBuilder::RETURN, $call->getMethod());
+        $this->assertSame('Controller', $call->getFromClass());
+        $this->assertSame(SequenceBuilder::ACTOR, $call->getToClass());
+        $this->assertSame('__construct', $call->getMethod());
     }
 }

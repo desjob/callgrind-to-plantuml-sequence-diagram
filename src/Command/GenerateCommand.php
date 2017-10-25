@@ -22,9 +22,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class GenerateCommand extends Command
 {
-    const EXPORT_FORMAT_SCREEN = 'screen';
-    const EXPORT_FORMAT_FILE = 'file';
-    const EXPORT_FORMAT_IMAGE = 'image';
+    const EXPORT_FORMAT_SCREEN = 'Screen';
+    const EXPORT_FORMAT_FILE = 'File';
+    const EXPORT_FORMAT_IMAGE = 'Image';
 
     const TEMP_OUTPUT_FILE = 'output/output.plantuml';
 
@@ -120,7 +120,7 @@ class GenerateCommand extends Command
         $this->io->note('Pro tip: if your diagram gets cut off, use more memory, apply a filter or upgrade to the Pro version');
         $this->exportFormat = $this->io->choice(
             'Export format:',
-            array(static::EXPORT_FORMAT_SCREEN, static::EXPORT_FORMAT_FILE, static::EXPORT_FORMAT_IMAGE),
+            array(1 => static::EXPORT_FORMAT_SCREEN, 2 => static::EXPORT_FORMAT_FILE, 3 => static::EXPORT_FORMAT_IMAGE),
             'image'
         );
 
@@ -251,6 +251,10 @@ class GenerateCommand extends Command
 
         // Always add visibility filter for returns of same class.
         $filters[] = new SelfCallReturnFilter();
+
+        if ($this->filterExcludeNativeFunctionCalls) {
+            $filters[] = new NativeFunctionFilter();
+        }
 
         return $filters;
     }

@@ -14,12 +14,12 @@ class ParserTest extends TestCase
 
     public function setUp()
     {
-        $callGrindString = file_get_contents(__DIR__.'/cachegrind.out.example1');
-        $this->parser = new Parser($callGrindString);
+        $this->parser = new Parser();
     }
 
     public function testParseEventsAndSummary()
     {
+        $this->parser->parseFile(__DIR__.'/cachegrind.out.example1');
         $eventCalls = $this->parser->getEventCalls();
         $this->assertCount(27, $eventCalls);
 
@@ -39,20 +39,15 @@ class ParserTest extends TestCase
 
         $summaryCalls = $this->parser->getSummaryCalls();
 
-        $this->assertCount(6, $summaryCalls);
+        $this->assertCount(1, $summaryCalls);
 
         foreach($summaryCalls as $summaryCall) {
             $this->assertInstanceOf(Call::class, $summaryCall);
         }
 
         $call1 = $summaryCalls[0];
-        $this->assertEquals(2, $call1->getId());
-        $this->assertEquals('UserService', $call1->getToClass());
-        $this->assertEquals('__construct', $call1->getMethod());
-
-        $call6 = $summaryCalls[5];
-        $this->assertEquals(6, $call6->getId());
-        $this->assertEquals('Controller', $call6->getToClass());
-        $this->assertEquals('execute', $call6->getMethod());
+        $this->assertEquals(9, $call1->getId());
+        $this->assertEquals('php', $call1->getToClass());
+        $this->assertEquals('{main}', $call1->getMethod());
     }
 }
