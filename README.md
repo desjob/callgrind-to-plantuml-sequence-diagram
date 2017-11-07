@@ -8,9 +8,9 @@ To setup and run the application you will need:
 
 # Rendering requirements 
 If you want to use the "image" export option, you will additionally need:
-- JRE
-- PlantUML Jar file
-- GraphViz DOT binary
+- [Java Runtime Environment](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+- [PlantUML Jar file](http://plantuml.com/download)
+- [GraphViz DOT binary](http://www.graphviz.org/Download.php)
 
 # Setup
 1. checkout this repository
