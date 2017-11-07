@@ -3,14 +3,14 @@ Generate PlantUML sequence diagrams for PHP using XDebug callgrind files
 
 # Requirements
 To setup and run the application you will need:
-PHP ^7.0
-Composer
+- PHP ^7.0
+- Composer
 
 # Rendering requirements 
 If you want to use the "image" export option, you will additionally need:
-JRE
-PlantUML Jar file
-GraphViz DOT binary
+- JRE
+- PlantUML Jar file
+- GraphViz DOT binary
 
 # Setup
 1. checkout this repository
@@ -49,10 +49,31 @@ When using the image option, the application will use the PlantUML and Graphiz D
 To be able to control the size of you diagram (and focus on a specific part) you can apply filters.
 
 ### Not deeper than
-php application.php generate <callgrind-file> --not-deeper-than ClassName::Method
+This filter will recursively filter out calls that happen inside the given method call. The call itself will still be shown in the sequence diagram. Multiple not-deeper-than filters can be applied!
 
+Example 1: usage without wildcard
+php application.php generate <callgrind-file> --not-deeper-than MyClass::someMethod
+In this example, any calls happening within someMethod() in class MyClass will not be shown in the sequence diagram.
 
+Example 2: usage with a wildcard
+php application.php generate <callgrind-file> --not-deeper-than Some\NameSpace% 
+In this example, any calls happening within classes in the namespace Some\Namespace will not be shown in the sequence diagram.
 
+Example 3: using multiple not-deeper-than filters
+php application.php generate <callgrind-file> --not-deeper-than MyClass::someMethod --not-deeper-than AnotherClass::anotherMethod
+In this example, any calls happening within someMethod() in class MyClass, or within anotherMethod() in AnotherClass will not be shown in the sequence diagram.
+
+### Start from
+When using this filter, only the given call and any calls happening inside of it will be shown in the sequence diagram.
+
+Example:
+php application.php generate <callgrind-file> --start-from MyApp\HomeController::homePageAction
+
+### Exclude native function calls (enabled by default)
+This filter will filter out any calls to the PHP API that do not perform any deeper calls.
+
+Example: turning off the native function call filter
+php application.php generate <callgrind-file> --exclude-native-function-calls 0
 
 
 ## Maintainers: 
