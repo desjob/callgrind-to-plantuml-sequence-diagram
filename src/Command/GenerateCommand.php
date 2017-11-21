@@ -121,7 +121,7 @@ class GenerateCommand extends Command
         $this->exportFormat = $this->io->choice(
             'Export format:',
             array(1 => static::EXPORT_FORMAT_SCREEN, 2 => static::EXPORT_FORMAT_FILE, 3 => static::EXPORT_FORMAT_IMAGE),
-            'image'
+            static::EXPORT_FORMAT_IMAGE
         );
 
         $this->outputFileName = 'output.plantuml';
